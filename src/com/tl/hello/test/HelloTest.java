@@ -14,6 +14,6 @@ public class HelloTest
   {
     //int roomid = RoomDao.getRoomId(4);
     
-    System.out.println("---" + UserDao.bindPhone("aaaaaaaaaa", 14, "13111111111"));
+    System.out.println("---" + RoomDao.isUserPlaying(10888));
   }
 }

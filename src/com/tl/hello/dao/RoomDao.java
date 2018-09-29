@@ -22,13 +22,16 @@ public class RoomDao {
 	public static boolean createRoom(int createid, int baseScore, String ship,
 			int look, int compare, int maxstake, int waittime, int thinktime,
 			int boutcount, int award, int maxPlayer) {
+		
+		if(isUserPlaying(createid) > 0){
+			return false;
+		}
 		Connection conn = null;
 		PreparedStatement stmt = null;
-		boolean flag = false;
 		try {
 			Class.forName(JDBC_DRIVER);
 			conn = DriverManager.getConnection(DB_URL, USER, PASS);
-
+			
 			String sql = "INSERT INTO room(createid,baseScore,ship,look,compare,maxstake,waittime,thinktime,boutcount,state,curplayer,award,maxplayer)"
 					+ " VALUES(?,?,?,?,?,?,?,?,?,0,?,?,?)";
 			stmt = conn.prepareStatement(sql);
@@ -45,8 +48,7 @@ public class RoomDao {
 			stmt.setInt(11, award);
 			stmt.setInt(12, maxPlayer);
 
-			flag = stmt.executeUpdate() > 0;
-			return flag;
+			return stmt.executeUpdate() > 0;
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
@@ -55,16 +57,38 @@ public class RoomDao {
 		return false;
 	}
 
+	public static int isUserPlaying(int id){
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		boolean flag = false;
+		try {
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			
+			String sql = "SELECT * FROM room WHERE (state=0 OR state=1) AND players LIKE ?";
+			stmt = conn.prepareStatement(sql);
+			stmt.setString(1, "%"+id+"%");
+			ResultSet rs = stmt.executeQuery();
+			if(rs.next()){
+				return rs.getInt("roomid");
+			}
+			return -1;
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(stmt, conn);
+		}
+		return -1;
+	}
+	
+	
 	public static int getRoomId(int createId) {
 		Connection conn = null;
 		Statement stmt = null;
 		int flag = -1;
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			stmt = conn.createStatement();
 
 			String sql = "SELECT roomid FROM room WHERE createid= " + createId;
