@@ -84,476 +84,201 @@ public class RoomDao {
 	
 	public static int getRoomId(int createId) {
 		Connection conn = null;
-		Statement stmt = null;
-		int flag = -1;
+		PreparedStatement stmt = null;
 		try {
 			Class.forName(JDBC_DRIVER);
 			conn = DriverManager.getConnection(DB_URL, USER, PASS);
-			stmt = conn.createStatement();
-
-			String sql = "SELECT roomid FROM room WHERE createid= " + createId;
-			ResultSet rs = stmt.executeQuery(sql);
-			while (rs.next()) {
-				flag = rs.getInt(1);
+			
+			String sql = "SELECT * FROM room WHERE (state=0 OR state=1) AND createid = ?";
+			stmt = conn.prepareStatement(sql);
+			stmt.setInt(1, createId);
+			ResultSet rs = stmt.executeQuery();
+			if(rs.next()){
+				return rs.getInt("roomid");
 			}
-			rs.close();
-			stmt.close();
-			conn.close();
-			return flag;
-		} catch (SQLException se) {
-			se.printStackTrace();
+			return -1;
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (stmt != null) {
-					stmt.close();
-				}
-			} catch (SQLException localSQLException4) {
-			}
-			try {
-				if (conn != null) {
-					conn.close();
-				}
-			} catch (SQLException se) {
-				se.printStackTrace();
-			}
+			close(stmt, conn);
 		}
-		return flag;
+		return -1;
 	}
 
 	public static boolean checkRoom(int roomid) {
 		Connection conn = null;
-		Statement stmt = null;
+		PreparedStatement stmt = null;
 		boolean flag = false;
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
-			stmt = conn.createStatement();
-
-			String sql = "SELECT count(*) FROM room WHERE roomid= " + roomid;
-
-			ResultSet rs = stmt.executeQuery(sql);
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			String sql = "SELECT count(*) FROM room WHERE (state=0 OR state=1) AND roomid=?";
+			stmt = conn.prepareStatement(sql);
+			stmt.setInt(1, roomid);
+			ResultSet rs = stmt.executeQuery();
 			while (rs.next()) {
 				if (rs.getInt(1) > 0) {
-					System.out.println("����������" + rs.getInt(1));
 					flag = true;
 				}
 			}
 			rs.close();
-			stmt.close();
-			conn.close();
+			
 			return flag;
-		} catch (SQLException se) {
-			se.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (stmt != null) {
-					stmt.close();
-				}
-			} catch (SQLException localSQLException4) {
-			}
-			try {
-				if (conn != null) {
-					conn.close();
-				}
-			} catch (SQLException se) {
-				se.printStackTrace();
-			}
+			close(stmt, conn);
 		}
 		return false;
 	}
-
-	public static boolean checkPlayer(int id) {
+	
+	public static int getRoomMaxPlayer(int roomid){
 		Connection conn = null;
-		Statement stmt = null;
-		boolean flag = false;
+		PreparedStatement stmt = null;
+		int count = -1;
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
-			stmt = conn.createStatement();
-
-			String sql = "SELECT count(*) FROM player WHERE playerid= " + id;
-
-			ResultSet rs = stmt.executeQuery(sql);
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			String sql = "SELECT maxplayer FROM room WHERE roomid=?";
+			stmt = conn.prepareStatement(sql);
+			stmt.setInt(1, roomid);
+			ResultSet rs = stmt.executeQuery();
 			while (rs.next()) {
-				if (rs.getInt(1) > 0) {
-					System.out.println("��������������" + rs.getInt(1));
-					flag = true;
-				}
+				count = rs.getInt(1);
 			}
 			rs.close();
-			stmt.close();
-			conn.close();
-			return flag;
-		} catch (SQLException se) {
-			se.printStackTrace();
+			return count;
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (stmt != null) {
-					stmt.close();
-				}
-			} catch (SQLException localSQLException4) {
-			}
-			try {
-				if (conn != null) {
-					conn.close();
-				}
-			} catch (SQLException se) {
-				se.printStackTrace();
-			}
+			close(stmt, conn);
 		}
-		return false;
+		return count;
 	}
 
 	public static boolean jionRoom(int playerid, int roomid) {
-		if (checkPlayer(playerid)) {
-			System.out.println("��������������");
+		if (isUserPlaying(playerid)>0) {
+			System.out.println("正在游戏中");
 			return false;
 		}
 		if (!checkRoom(roomid)) {
-			System.out.println("����������");
+			System.out.println("房间号不存在");
 			return false;
 		}
+		
+		int max = getRoomMaxPlayer(roomid);
+		
 		String players = getPlayers(roomid);
-		if ((players != null) && (players.length() > 0)
-				&& (getPlayers(roomid).split("-").length >= 6)) {
-			System.out.println("��������");
+		if (players != null && players.length() > 0
+				&& getPlayers(roomid).split("-").length >= max) {
+			System.out.println("房间已满");
 			return false;
 		}
 		Connection conn = null;
-		Statement stmt = null;
+		PreparedStatement stmt = null;
 		boolean flag = false;
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
-			stmt = conn.createStatement();
-			if ((players == null) || (players.length() == 0)) {
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			
+			if (players == null || players.length() == 0) {
 				players = playerid + "";
 			} else {
 				players = players + "-" + playerid;
 			}
-			String sql = "UPDATE room SET players='" + players
-					+ "' WHERE roomid=" + roomid;
-			System.out.println(sql);
-			if (stmt.executeUpdate(sql) > 0) {
-				sql =
-
-				"INSERT INTO player(roomid,playerid,stake,cards,abandon,ready,islook,curstake) VALUES("
-						+ roomid
-						+ ","
-						+ playerid
-						+ ","
-						+ 200
-						+ ",'',"
-						+ 0
-						+ "," + 0 + "," + 0 + "," + 0 + ")";
-				System.out.println("--" + sql);
+			String sql = "UPDATE room SET players=? WHERE roomid=?";
+			stmt = conn.prepareStatement(sql);
+			stmt.setString(1, players);
+			stmt.setInt(2, roomid);
+			if (stmt.executeUpdate() > 0) {
+				sql ="INSERT INTO player(roomid,playerid,stake,cards,abandon,ready,islook,curstake,createtime) VALUES("+roomid+","+playerid+",200,'',0,0,0,0,CURRENT_TIME())";
 				flag = stmt.executeUpdate(sql) > 0;
 			}
-			stmt.close();
-			conn.close();
 			return flag;
-		} catch (SQLException se) {
-			se.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (stmt != null) {
-					stmt.close();
-				}
-			} catch (SQLException localSQLException4) {
-			}
-			try {
-				if (conn != null) {
-					conn.close();
-				}
-			} catch (SQLException se) {
-				se.printStackTrace();
-			}
+			close(stmt, conn);
 		}
 		return false;
 	}
 
 	public static boolean exitRoom(int playerid, int roomid) {
-		if (!checkPlayer(playerid)) {
+		if (isUserPlaying(playerid) == -1) {
+			System.out.println("没有游戏");
 			return false;
 		}
 		if (!checkRoom(roomid)) {
+			System.out.println("房间号不正确");
+			return false;
+		}
+		
+		String players = getPlayers(roomid);
+		if (players == null || players.length() == 0) {
 			return false;
 		}
 		Connection conn = null;
-		Statement stmt = null;
-		boolean flag = false;
+		PreparedStatement stmt = null;
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
-			stmt = conn.createStatement();
-
-			String sql = "SELECT players FROM room WHERE roomid= " + roomid;
-			ResultSet rs = stmt.executeQuery(sql);
-			if (rs.next()) {
-				String players = rs.getString(1);
-				if ((players == null) || (players.length() == 0)) {
-				} else {
-					players = players.replace(playerid + "", "").replace("--",
-							"-");
-					if (players.startsWith("-")) {
-						players = players.substring(1);
-					}
-					if (players.endsWith("-")) {
-						players = players.substring(0, players.length() - 1);
-					}
-					sql = "UPDATE room SET players='" + players
-							+ "' WHERE roomid=" + roomid;
-					System.out.println(sql);
-					if (stmt.executeUpdate(sql) > 0) {
-						sql = "DELETE FROM player WHERE playerid=" + playerid;
-						System.out.println("--" + sql);
-						flag = stmt.executeUpdate(sql) > 0;
-					}
-				}
-			}
-			rs.close();
-			stmt.close();
-			conn.close();
-			return flag;
-		} catch (SQLException se) {
-			se.printStackTrace();
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			
+			players = Tools.removeId(players, playerid+"");
+			String sql = "UPDATE room SET players=? WHERE roomid=?";
+			stmt = conn.prepareStatement(sql);	
+			return stmt.executeUpdate(sql) > 0;
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (stmt != null) {
-					stmt.close();
-				}
-			} catch (SQLException localSQLException4) {
-			}
-			try {
-				if (conn != null) {
-					conn.close();
-				}
-			} catch (SQLException se) {
-				se.printStackTrace();
-			}
+			close(stmt, conn);
 		}
 		return false;
 	}
 
 	public static boolean closeRoom(int roomid) {
 		if (!checkRoom(roomid)) {
+			System.out.println("房间不存在");
 			return false;
 		}
 		Connection conn = null;
-		Statement stmt = null;
-		boolean flag = false;
+		PreparedStatement stmt = null;
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
-			stmt = conn.createStatement();
-
-			String sql = "SELECT players FROM room WHERE roomid= " + roomid;
-			ResultSet rs = stmt.executeQuery(sql);
-			if (rs.next()) {
-				String players = rs.getString(1);
-				if ((players == null) || (players.length() == 0)) {
-				} else {
-					String[] playersid = players.split("-");
-					for (int i = 0; i < playersid.length; i++) {
-						sql = "DELETE FROM player WHERE playerid="
-								+ playersid[i];
-						System.out.println("--" + sql);
-						flag = stmt.executeUpdate(sql) > 0;
-					}
-				}
-			}
-			rs.close();
-			sql = "DELETE FROM room WHERE roomid=" + roomid;
-			System.out.println("--" + sql);
-			flag = stmt.executeUpdate(sql) > 0;
-			stmt.close();
-			conn.close();
-			return flag;
-		} catch (SQLException se) {
-			se.printStackTrace();
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			String sql = "UPDATE room SET state=2 WHERE roomid=?";
+			stmt = conn.prepareStatement(sql);
+			stmt.setInt(1, roomid);
+			return stmt.executeUpdate() > 0;
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (stmt != null) {
-					stmt.close();
-				}
-			} catch (SQLException localSQLException4) {
-			}
-			try {
-				if (conn != null) {
-					conn.close();
-				}
-			} catch (SQLException se) {
-				se.printStackTrace();
-			}
-		}
-		return false;
-	}
-
-	public static boolean createPlayer(int playerid, int roomid) {
-		if (!checkRoom(roomid)) {
-			System.out.println("����������");
-			return false;
-		}
-		if (checkPlayer(playerid)) {
-			System.out.println("��������������");
-			return false;
-		}
-		Connection conn = null;
-		Statement stmt = null;
-		boolean flag = false;
-		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
-			stmt = conn.createStatement();
-
-			String sql = "INSERT INTO player(roomid,playerid,stake,cards,abandon,ready,islook,curstake) VALUES("
-					+ roomid
-					+ ","
-					+ playerid
-					+ ","
-					+ 200
-					+ ",'',"
-					+ 0
-					+ ","
-					+ 0 + "," + 0 + "," + 0 + ")";
-			System.out.println("--" + sql);
-			flag = stmt.execute(sql);
-			stmt.close();
-			conn.close();
-			return flag;
-		} catch (SQLException se) {
-			se.printStackTrace();
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				if (stmt != null) {
-					stmt.close();
-				}
-			} catch (SQLException localSQLException4) {
-			}
-			try {
-				if (conn != null) {
-					conn.close();
-				}
-			} catch (SQLException se) {
-				se.printStackTrace();
-			}
+			close(stmt, conn);
 		}
 		return false;
 	}
 
 	public static boolean ready(int roomid, int playerid, int ready) {
 		if (!checkRoom(roomid)) {
-			System.out.println("����������");
+			System.out.println("房间号不存在");
 			return false;
 		}
-		if (!checkPlayer(playerid)) {
-			System.out.println("����������������");
+		if (isUserPlaying(playerid) != roomid) {
+			System.out.println("玩家不在游戏");
 			return false;
 		}
 		Connection conn = null;
-		Statement stmt = null;
+		PreparedStatement stmt = null;
 		boolean flag = false;
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
-			stmt = conn.createStatement();
-			String sql = "UPDATE player SET ready=" + ready
-					+ " WHERE playerid=" + playerid;
-			flag = stmt.executeUpdate(sql) > 0;
-			stmt.close();
-			conn.close();
-			return flag;
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			close(stmt, conn);
-		}
-		return flag;
-	}
-
-	public static int getRoomIdByPlayer(int playerid) {
-		Connection conn = null;
-		Statement stmt = null;
-		int flag = 0;
-		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
-			stmt = conn.createStatement();
-			String sql = "SELECT roomid FROM player WHERE playerid=" + playerid;
-			ResultSet rs = stmt.executeQuery(sql);
-			if (rs.next()) {
-				flag = rs.getInt(1);
-			}
-			rs.close();
-			stmt.close();
-			conn.close();
-			return flag;
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			close(stmt, conn);
-		}
-		return 0;
-	}
-
-	public static boolean ready(int playerid, int ready) {
-		if (!checkPlayer(playerid)) {
-			System.out.println("����������������");
-			return false;
-		}
-		Connection conn = null;
-		Statement stmt = null;
-		boolean flag = false;
-		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
-			stmt = conn.createStatement();
-			String sql = "UPDATE player SET ready=" + ready
-					+ " WHERE playerid=" + playerid;
-			flag = stmt.executeUpdate(sql) > 0;
-			stmt.close();
-			conn.close();
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			
+			String sql = "UPDATE player SET ready=? WHERE playerid=? AND roomid=?";
+			stmt = conn.prepareStatement(sql);
+			stmt.setInt(1, ready);
+			stmt.setInt(2, playerid);
+			stmt.setInt(3, roomid);
+			flag = stmt.executeUpdate() > 0;
 			return flag;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -565,44 +290,36 @@ public class RoomDao {
 
 	public static boolean checkReady(int roomid) {
 		if (!checkRoom(roomid)) {
-			System.out.println("����������");
+			System.out.println("房间号不存在");
+			return false;
+		}
+		
+		String players = getPlayers(roomid);
+		if(players == null || players.length() ==0){
+			System.out.println("没有玩家");
 			return false;
 		}
 		Connection conn = null;
 		Statement stmt = null;
 		boolean flag = false;
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			stmt = conn.createStatement();
 
-			String sql = "SELECT players FROM room WHERE roomid= " + roomid;
-			ResultSet rs = stmt.executeQuery(sql);
-			if (rs.next()) {
-				String players = rs.getString(1);
-				if ((players == null) || (players.length() == 0)) {
-					System.out.println("��������������");
-				} else {
-					String[] playersid = players.split("-");
-					flag = true;
-					for (int i = 0; i < playersid.length; i++) {
-						sql = "SELECT ready FROM player WHERE playerid="
-								+ playersid[i];
-						System.out.println("--" + sql);
-						ResultSet set = stmt.executeQuery(sql);
-						if (set.next()) {
-							flag = set.getInt(1) > 0;
-							if (!flag) {
-								break;
-							}
-						}
-					}
+			String[] playersid = players.split("-");
+			
+			for (int i = 0; i < playersid.length; i++) {
+				String sql = "SELECT ready FROM player WHERE playerid="+ playersid[i];
+				ResultSet set = stmt.executeQuery(sql);
+				if (set.next()) {
+					flag = set.getInt(1) > 0;
+				}
+				set.close();
+				if (!flag) {
+					break;
 				}
 			}
-			rs.close();
 			return flag;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -614,42 +331,35 @@ public class RoomDao {
 
 	public static boolean dealCard(int roomid) {
 		if (!checkRoom(roomid)) {
-			System.out.println("����������");
+			System.out.println("房间不存在");
+			return false;
+		}
+		String players = getPlayers(roomid);
+		if(players == null || players.length() ==0){
+			System.out.println("没有玩家");
 			return false;
 		}
 		Connection conn = null;
 		Statement stmt = null;
 		boolean flag = false;
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			stmt = conn.createStatement();
-
-			String sql = "SELECT players FROM room WHERE roomid= " + roomid;
-			ResultSet rs = stmt.executeQuery(sql);
-			if (rs.next()) {
-				String players = rs.getString(1);
-				if ((players == null) || (players.length() == 0)) {
-					System.out.println("��������������");
-				} else {
-					CardUtils.initCard();
-					String[] playersid = players.split("-");
-					for (int i = 0; i < playersid.length; i++) {
-						sql = "UPDATE player SET cards='" + CardUtils.getCard()
-								+ "' WHERE playerid=" + playersid[i];
-						System.out.println("--" + sql);
-						flag = stmt.executeUpdate(sql) > 0;
-					}
-				}
-				sql = "UPDATE room SET remainplayers='" + players
-						+ "',state=1 WHERE roomid=" + roomid;
+			
+			CardUtils.initCard();
+			String[] playersid = players.split("-");
+			for (int i = 0; i < playersid.length; i++) {
+				String sql = "UPDATE player SET cards='" + CardUtils.getCard()
+						+ "' WHERE playerid=" + playersid[i];
 				System.out.println("--" + sql);
 				flag = stmt.executeUpdate(sql) > 0;
 			}
-			rs.close();
+			
+			String sql = "UPDATE room SET remainplayers='" + players
+					+ "',state=1 WHERE roomid=" + roomid;
+			System.out.println("--" + sql);
+			flag = stmt.executeUpdate(sql) > 0;
 			return flag;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -661,22 +371,18 @@ public class RoomDao {
 
 	public static String getRemain(int roomid) {
 		if (!checkRoom(roomid)) {
-			System.out.println("����������");
+			System.out.println("房间不存在");
 			return "";
 		}
 		Connection conn = null;
 		Statement stmt = null;
 		String curplayer = "";
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			stmt = conn.createStatement();
 
-			String sql = "SELECT remainplayers FROM room WHERE roomid= "
-					+ roomid;
+			String sql = "SELECT remainplayers FROM room WHERE roomid= "+ roomid;
 			ResultSet rs = stmt.executeQuery(sql);
 			if (rs.next()) {
 				curplayer = rs.getString(1);
@@ -693,18 +399,15 @@ public class RoomDao {
 
 	public static String getPlayers(int roomid) {
 		if (!checkRoom(roomid)) {
-			System.out.println("����������");
+			System.out.println("房间不存在");
 			return "";
 		}
 		Connection conn = null;
 		Statement stmt = null;
 		String curplayer = "";
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			stmt = conn.createStatement();
 
 			String sql = "SELECT players FROM room WHERE roomid= " + roomid;
@@ -724,18 +427,15 @@ public class RoomDao {
 
 	public static String getCurPlayer(int roomid) {
 		if (!checkRoom(roomid)) {
-			System.out.println("����������");
+			System.out.println("房间不存在");
 			return "";
 		}
 		Connection conn = null;
 		Statement stmt = null;
 		String curplayer = "";
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			stmt = conn.createStatement();
 
 			String sql = "SELECT curplayer FROM room WHERE roomid= " + roomid;
@@ -753,25 +453,27 @@ public class RoomDao {
 		return curplayer;
 	}
 
-	public static boolean isAbandon(int playerid) {
-		if (!checkPlayer(playerid)) {
-			System.out.println("����������������");
+	public static boolean isAbandon(int roomid, int playerid) {
+		if (!checkRoom(roomid)) {
+			System.out.println("房间不存在");
+			return false;
+		}
+		if (isUserPlaying(playerid) != roomid) {
+			System.out.println("玩家不在当前房间");
 			return false;
 		}
 		Connection conn = null;
-		Statement stmt = null;
+		PreparedStatement stmt = null;
 		boolean flag = false;
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
-			stmt = conn.createStatement();
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 
-			String sql = "SELECT abandon FROM player WHERE playerid= "
-					+ playerid;
-			ResultSet rs = stmt.executeQuery(sql);
+			String sql = "SELECT abandon FROM player WHERE playerid=? AND roomid=?";
+			stmt = conn.prepareStatement(sql);
+			stmt.setInt(1, playerid);
+			stmt.setInt(2, roomid);
+			ResultSet rs = stmt.executeQuery();
 			if (rs.next()) {
 				flag = rs.getInt(1) == 0;
 			}
@@ -787,18 +489,15 @@ public class RoomDao {
 
 	public static boolean isPlaying(int roomid) {
 		if (!checkRoom(roomid)) {
-			System.out.println("����������");
+			System.out.println("房间不存在");
 			return false;
 		}
 		Connection conn = null;
 		Statement stmt = null;
 		boolean curplayer = false;
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			stmt = conn.createStatement();
 
 			String sql = "SELECT state FROM room WHERE roomid= " + roomid;
@@ -818,18 +517,15 @@ public class RoomDao {
 
 	public static int curstake(int roomid) {
 		if (!checkRoom(roomid)) {
-			System.out.println("����������");
+			System.out.println("房间不存在");
 			return -1;
 		}
 		Connection conn = null;
 		Statement stmt = null;
 		int curstake = -1;
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			stmt = conn.createStatement();
 
 			String sql = "SELECT curstake FROM room WHERE roomid= " + roomid;
@@ -849,52 +545,44 @@ public class RoomDao {
 
 	public static boolean nextPlayer(int roomid) {
 		if (!checkRoom(roomid)) {
-			System.out.println("����������");
+			System.out.println("房间不存在");
 			return false;
 		}
 		String remain = getRemain(roomid);
-		if ((remain == null) || (remain.length() == 0)
-				|| (!remain.contains("-"))) {
-			System.out.println("����������");
+		if (remain == null || remain.length() == 0 || !remain.contains("-")) {
+			System.out.println("游戏已结束");
+			return false;
+		}
+		
+		String curplayer = getCurPlayer(roomid);
+		if ((curplayer == null) || (curplayer.length() == 0)) {
+			System.out.println("游戏已结束");
 			return false;
 		}
 		Connection conn = null;
-		Statement stmt = null;
+		PreparedStatement stmt = null;
 		boolean flag = false;
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
-			stmt = conn.createStatement();
-
-			String sql = "SELECT curplayer FROM room WHERE roomid= " + roomid;
-			ResultSet rs = stmt.executeQuery(sql);
-			if (rs.next()) {
-				String curplayer = rs.getString(1);
-				if ((curplayer == null) || (curplayer.length() == 0)) {
-					System.out.println("��������������");
-				} else {
-					String[] remains = remain.split("-");
-					for (int i = 0; i < remains.length; i++) {
-						if (remains[i].equals(curplayer)) {
-							if (i == remains.length - 1) {
-								curplayer = remains[0];
-								break;
-							}
-							curplayer = remains[(i + 1)];
-
-							break;
-						}
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			
+			
+			String[] remains = remain.split("-");
+			for (int i = 0; i < remains.length; i++) {
+				if (remains[i].equals(curplayer)) {
+					if (i == remains.length - 1) {
+						curplayer = remains[0];
+						break;
 					}
-					sql = "UPDATE room SET curplayer='" + curplayer
-							+ "' WHERE roomid=" + roomid;
-					System.out.println("--" + sql);
-					flag = stmt.executeUpdate(sql) > 0;
+					curplayer = remains[(i + 1)];
+					break;
 				}
 			}
-			rs.close();
+			String sql = "UPDATE room SET curplayer=? WHERE roomid=?";
+			stmt = conn.prepareStatement(sql);
+			stmt.setString(1, curplayer);
+			stmt.setInt(2, roomid);
+			flag = stmt.executeUpdate() > 0;
 			return flag;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -906,11 +594,11 @@ public class RoomDao {
 
 	public static boolean abandon(int roomid, int playerid) {
 		if (!checkRoom(roomid)) {
-			System.out.println("����������");
+			System.out.println("房间不存在");
 			return false;
 		}
-		if (!checkPlayer(playerid)) {
-			System.out.println("����������������");
+		if (isUserPlaying(playerid) != roomid) {
+			System.out.println("玩家不在当前房间");
 			return false;
 		}
 		String remain = getRemain(roomid);
@@ -920,16 +608,13 @@ public class RoomDao {
 		Statement stmt = null;
 		boolean flag = false;
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			stmt = conn.createStatement();
 			String sql = "UPDATE player SET abandon=1 WHERE playerid="
 					+ playerid;
 			flag = stmt.executeUpdate(sql) > 0;
-			if (curPlay.equals(playerid)) {
+			if (curPlay.equals(playerid+"")) {
 				nextPlayer(roomid);
 			}
 			remain = Tools.removeId(remain, playerid + "");
@@ -950,18 +635,15 @@ public class RoomDao {
 
 	public static boolean isGameOver(int roomid) {
 		if (!checkRoom(roomid)) {
-			System.out.println("����������");
+			System.out.println("房间不存在");
 			return false;
 		}
 		Connection conn = null;
 		Statement stmt = null;
 		boolean curplayer = false;
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			stmt = conn.createStatement();
 
 			String sql = "SELECT curbout,boutcount FROM room WHERE roomid= "
@@ -983,50 +665,25 @@ public class RoomDao {
 	}
 
 	public static boolean gameover(int roomid) {
-		if (!checkRoom(roomid)) {
-			System.out.println("����������");
-			return false;
-		}
-		Connection conn = null;
-		Statement stmt = null;
-		boolean flag = false;
-		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
-			stmt = conn.createStatement();
-			String sql = "DELETE FROM player WHERE roomid= " + roomid;
-			flag = stmt.executeUpdate(sql) > 0;
-
-			sql = "DELETE FROM room WHERE roomid= " + roomid;
-			flag = stmt.executeUpdate(sql) > 0;
-			return flag;
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			close(stmt, conn);
-		}
-		return flag;
+		return closeRoom(roomid);
 	}
 
 	public static boolean currentOver(int roomid) {
 		if (!checkRoom(roomid)) {
-			System.out.println("����������");
+			System.out.println("房间号不存在");
 			return false;
 		}
 		String remain = getRemain(roomid);
+		if(remain.contains("-")){
+			return false;
+		}
 
 		Connection conn = null;
 		Statement stmt = null;
 		boolean flag = false;
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			stmt = conn.createStatement();
 			String sql = "SELECT allstake FROM room WHERE roomid= " + roomid;
 			ResultSet rs = stmt.executeQuery(sql);

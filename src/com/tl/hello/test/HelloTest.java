@@ -14,6 +14,6 @@ public class HelloTest
   {
     //int roomid = RoomDao.getRoomId(4);
     
-    System.out.println("---" + RoomDao.isUserPlaying(10888));
+    System.out.println("" + RoomDao.abandon(30,10888));
   }
 }
