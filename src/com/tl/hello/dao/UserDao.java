@@ -11,11 +11,16 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class UserDao {
 	static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
-	static final String DB_URL = "jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8";
+	static final String DB_URL = "jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf8&autoReconnect=true";
 	static final String USER = "root";
 	static final String PASS = "Wang4664";
+	
+	static Logger logger= LoggerFactory.getLogger(UserDao.class.getName());
 
 	public static String getUser(String openid) {
 		Connection conn = null;
@@ -45,10 +50,9 @@ public class UserDao {
 			stmt.close();
 			conn.close();
 			return jsonObject.toJSONString();
-		} catch (SQLException se) {
-			se.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
+			logger.debug(e.toString());
 		} finally {
 			try {
 				if (stmt != null) {
@@ -71,9 +75,11 @@ public class UserDao {
 		Connection conn = null;
 		Statement stmt = null;
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
+			Class.forName(JDBC_DRIVER);
 			conn = DriverManager
-					.getConnection("jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8");
+					.getConnection(
+							DB_URL,
+							USER, PASS);
 			stmt = conn.createStatement();
 			String sql = "SELECT * FROM user WHERE id= " + id;
 			ResultSet rs = stmt.executeQuery(sql);
@@ -85,10 +91,9 @@ public class UserDao {
 			stmt.close();
 			conn.close();
 			return num;
-		} catch (SQLException se) {
-			se.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
+			logger.debug(e.toString());
 		} finally {
 			try {
 				if (stmt != null) {
@@ -171,6 +176,7 @@ public class UserDao {
 			return jsonArray.toJSONString();
 		} catch (Exception e) {
 			e.printStackTrace();
+			logger.debug(e.toString());
 		} finally {
 			close(stmt, conn);
 		}
@@ -205,6 +211,7 @@ public class UserDao {
 			return jsonArray.toJSONString();
 		} catch (Exception e) {
 			e.printStackTrace();
+			logger.debug(e.toString());
 		} finally {
 			close(stmt, conn);
 		}
@@ -239,6 +246,7 @@ public class UserDao {
 			return jsonArray.toJSONString();
 		} catch (Exception e) {
 			e.printStackTrace();
+			logger.debug(e.toString());
 		} finally {
 			close(stmt, conn);
 		}
@@ -251,17 +259,15 @@ public class UserDao {
 		Statement stmt = null;
 		boolean flag = false;
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
+			Class.forName(JDBC_DRIVER);
 			conn = DriverManager
-					.getConnection(
-							"jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf-8",
-							"root", "Wang4664");
+					.getConnection(DB_URL);
 			stmt = conn.createStatement();
 
 			String sql = "SELECT * FROM user WHERE openid= '" + openid + "'";
 
 			ResultSet rs = stmt.executeQuery(sql);
-			if (!rs.wasNull()) {
+			if (rs.next()) {
 				sql = "UPDATE user SET nickname='" + nickname + "',head='"
 						+ head + "',sex=" + sex + ",province='" + province
 						+ "',city='" + city + "',country='" + country
@@ -281,10 +287,9 @@ public class UserDao {
 			stmt.close();
 			conn.close();
 			return flag;
-		} catch (SQLException se) {
-			se.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
+			logger.debug(e.toString());
 		} finally {
 			try {
 				if (stmt != null) {

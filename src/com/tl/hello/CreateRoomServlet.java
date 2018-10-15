@@ -38,6 +38,7 @@ public class CreateRoomServlet extends HttpServlet {
 		String maxstake = request.getParameter("maxstake");
 		String ships = request.getParameter("ships");
 		String award = request.getParameter("award");
+		String maxcount = request.getParameter("maxcount");
 		if ((id == null) || (id.length() == 0)) {
 			response.getWriter().write(
 					Tools.getResponse(-1, "id is null", "创建房间失败"));
@@ -52,6 +53,7 @@ public class CreateRoomServlet extends HttpServlet {
 		int think = 0;
 		int max = 0;
 		int awardnum = 0;
+		int maxPlayer = 3;
 		try {
 			uid = Integer.parseInt(id);
 			base = Integer.parseInt(basescore);
@@ -62,6 +64,7 @@ public class CreateRoomServlet extends HttpServlet {
 			think = Integer.parseInt(thinktime);
 			max = Integer.parseInt(maxstake);
 			awardnum = Integer.parseInt(award);
+			maxPlayer = Integer.parseInt(maxcount);
 		} catch (Exception e) {
 			response.getWriter().write(
 					Tools.getResponse(-1, "param is error", "创建房间失败"));
@@ -73,7 +76,7 @@ public class CreateRoomServlet extends HttpServlet {
 			return;
 		}
 		boolean flag = RoomDao.createRoom(uid, base, ships, lookcount,
-				comparecount, max, wait, think, bout, awardnum,6);
+				comparecount, max, wait, think, bout, awardnum,maxPlayer);
 		if (!flag) {
 			response.getWriter().write(
 					Tools.getResponse(-1, "db error", "创建房间失败"));

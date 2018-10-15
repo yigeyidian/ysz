@@ -14,6 +14,8 @@ public class HelloTest
   {
     //int roomid = RoomDao.getRoomId(4);
     
-    System.out.println("" + RoomDao.abandon(30,10888));
+    System.out.println("" + UserDao.saveUser("aaa", "会飞的🐟",
+    		"https://wx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTI1NJSEuuWZrm81aficaLZEK2WnzUMDf47J1ickhvINMA6mIgr4sIicia8KYp56Uj1icSicnjLABVrqNhUg/132",
+    		"1", "", "", ""));
   }
 }

@@ -1,0 +1,148 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Java后端WebSocket的Tomcat实现</title>
+</head>
+<body>
+    Welcome<br/><input id="text" type="text"/>
+    <button onclick="send()">发送消息</button>
+    <hr/>
+    <div id="mid" style="color:'red'"></div>
+    <hr>
+    <input id="inputtext" type="text"/><div id="tips" style="color:red">提示</div>
+    <hr/>
+     <button onclick="createroom()">创建房间</button>
+     <button onclick="jionroom()">加入房间</button>
+     <hr/>
+     <button onclick="ready()">准备</button>
+     <hr/>
+     <button onclick="stake()">下注</button>
+     <button onclick="abandon()">弃牌</button>
+     <button onclick="compare()">比牌</button>
+     <button onclick="scancard()">看牌</button>
+     <hr/><hr/>
+    <button onclick="closeWebSocket()">关闭WebSocket连接</button>
+    <hr/>
+    <div id="message"></div>
+</body>
+
+<script type="text/javascript">
+    var websocket = null;
+    
+    var uid = Math.round(Math.random()*1000)+10000;
+    document.getElementById('mid').innerHTML = "本人ID:"+uid;
+    //判断当前浏览器是否支持WebSocket
+    if ('WebSocket' in window) {
+    	
+        websocket = new WebSocket("wss://www.888ysz.com/hello/websocket");
+    }
+    else {
+        alert('当前浏览器 Not support websocket')
+    }
+
+    //连接发生错误的回调方法
+    websocket.onerror = function () {
+        setMessageInnerHTML("WebSocket连接发生错误");
+    };
+
+    //连接成功建立的回调方法
+    websocket.onopen = function () {
+        setMessageInnerHTML("WebSocket连接成功");
+        //websocket.send("{'uid':"+uid+",'msg':'加入房间'}");
+        //websocket.send(message);
+    }
+
+    //接收到消息的回调方法
+    websocket.onmessage = function (event) {
+        setMessageInnerHTML(event.data);
+    }
+
+    //连接关闭的回调方法
+    websocket.onclose = function () {
+        setMessageInnerHTML("WebSocket连接关闭");
+    }
+
+    //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+    window.onbeforeunload = function () {
+        closeWebSocket();
+    }
+
+    //将消息显示在网页上
+    function setMessageInnerHTML(innerHTML) {
+        document.getElementById('message').innerHTML += innerHTML + '<br/>';
+    }
+
+    //关闭WebSocket连接
+    function closeWebSocket() {
+        websocket.close();
+    }
+
+    //发送消息
+    function send() {
+        var message = document.getElementById('text').value;
+        websocket.send(message);
+    }
+    
+    function send(type,msg) {
+    	document.getElementById('message').innerHTML += "send: {'uid':"+uid+",'type':'"+type+"','msg':'"+msg+"'}" + '<br/>';
+        websocket.send("{'uid':"+uid+",'type':'"+type+"','msg':'"+msg+"'}");
+    }
+    
+    function createroom(){
+       send("create", "创建房间");
+    }
+    
+    function jionroom(){
+    	var message = document.getElementById('inputtext').value;
+	    if(message != null && message.length > 0)   {   
+	        if(/^-?\d+$/.test(message)){   
+	          send("jion", message);
+	    	}else{
+	    		document.getElementById('tips').innerHTML="输入有误";
+	    	}
+	    }else{
+	    	document.getElementById('tips').innerHTML="请输入房间号";
+	    }
+    }
+    
+    function ready(){
+       send("ready", "准备");
+    }
+    
+    function stake(){
+       var message = document.getElementById('inputtext').value;
+	    if(message != null && message.length > 0)   { 
+		    if(/^-?\d+$/.test(message)){   
+	          send("stake", message);
+	    	}else{
+	    		document.getElementById('tips').innerHTML="输入有误";
+	    	}
+	       
+	    }else{
+	    	document.getElementById('tips').innerHTML="请输入下注筹码";
+	    }
+    }
+    
+    function abandon(){
+       send("abandon", "弃牌");
+    }
+    function scancard(){
+       send("scancard", "看牌");
+    }
+    
+    function compare(){
+       var message = document.getElementById('inputtext').value;
+	    if(message != null && message.length > 0)   { 
+		    if(/^-?\d+$/.test(message)){   
+	          send("compare", message);
+	    	}else{
+	    		document.getElementById('tips').innerHTML="输入有误";
+	    	}
+	    }else{
+	    	document.getElementById('tips').innerHTML="请输入看牌玩家ID";
+	    }
+    }
+    
+    
+</script>
+</html>
