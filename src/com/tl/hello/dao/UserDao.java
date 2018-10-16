@@ -20,7 +20,6 @@ public class UserDao {
 	static final String USER = "root";
 	static final String PASS = "Wang4664";
 	
-	static Logger logger= LoggerFactory.getLogger(UserDao.class.getName());
 
 	public static String getUser(String openid) {
 		Connection conn = null;
@@ -52,7 +51,6 @@ public class UserDao {
 			return jsonObject.toJSONString();
 		} catch (Exception e) {
 			e.printStackTrace();
-			logger.debug(e.toString());
 		} finally {
 			try {
 				if (stmt != null) {
@@ -93,7 +91,6 @@ public class UserDao {
 			return num;
 		} catch (Exception e) {
 			e.printStackTrace();
-			logger.debug(e.toString());
 		} finally {
 			try {
 				if (stmt != null) {
@@ -176,7 +173,6 @@ public class UserDao {
 			return jsonArray.toJSONString();
 		} catch (Exception e) {
 			e.printStackTrace();
-			logger.debug(e.toString());
 		} finally {
 			close(stmt, conn);
 		}
@@ -211,7 +207,6 @@ public class UserDao {
 			return jsonArray.toJSONString();
 		} catch (Exception e) {
 			e.printStackTrace();
-			logger.debug(e.toString());
 		} finally {
 			close(stmt, conn);
 		}
@@ -246,7 +241,6 @@ public class UserDao {
 			return jsonArray.toJSONString();
 		} catch (Exception e) {
 			e.printStackTrace();
-			logger.debug(e.toString());
 		} finally {
 			close(stmt, conn);
 		}
@@ -289,7 +283,6 @@ public class UserDao {
 			return flag;
 		} catch (Exception e) {
 			e.printStackTrace();
-			logger.debug(e.toString());
 		} finally {
 			try {
 				if (stmt != null) {

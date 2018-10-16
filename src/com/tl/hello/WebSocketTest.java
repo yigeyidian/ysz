@@ -2,13 +2,16 @@ package com.tl.hello;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.tl.hello.bean.RoomBean;
 import com.tl.hello.dao.RoomDao;
+
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
@@ -49,7 +52,7 @@ public class WebSocketTest {
 			String msg = jsonObject.getString("msg");
 			if (type.equals("create")) {
 				boolean flag = RoomDao.createRoom(uid, 1, "2-4-8-20", 1, 1,
-						200, 20, 20, 8, 0, 6);
+						200, 20, 20, 8, 0, 6,0,0);
 				if (!flag) {
 					send("系统消息", "创建房间失败");
 					sendMsg("error", "创建房间失败");
@@ -125,12 +128,16 @@ public class WebSocketTest {
 					return;
 				}
 				int stake = Integer.parseInt(msg);
-				int curstake = RoomDao.curstake(roomid);
-				if (stake < RoomDao.curstake(roomid)) {
-					send("系统消息", "下注失败，最少下注" + curstake);
-					sendMsg("error", "下注失败，最少下注" + curstake);
+				
+				RoomBean bean = RoomDao.getRoom(roomid);
+				boolean islook = RoomDao.isLook(roomid, uid);
+				if(stake < (islook?bean.getCurstake():(int)(bean.getCurstake()/2.5f))){
+					send("系统消息", "下注失败，最少下注" + (islook?bean.getCurstake():(int)(bean.getCurstake()/2.5f)));
+					sendMsg("error", "下注失败，最少下注" + (islook?bean.getCurstake():(int)(bean.getCurstake()/2.5f)));
 					return;
 				}
+				
+				
 				boolean flag = RoomDao.stake(roomid, uid, stake);
 				if (flag) {
 					sendAll(roomid, uid + "", "下注" + msg);
@@ -143,6 +150,28 @@ public class WebSocketTest {
 					json.put("room", RoomDao.getRoomDetail(roomid));
 					json.put("player", RoomDao.getAllPlayer(roomid));
 					sendAllMsg(roomid, "waiting", json.toJSONString());
+					
+					if(RoomDao.checkAllStake(roomid)){
+						sendAllMsg(roomid, "allcompare", "allcompare");
+						sendAll(roomid, "系统消息", "筹码已满，一起比牌");
+						
+						RoomDao.compareAll(roomid);
+						
+						String remain = RoomDao.getRemain(roomid);
+						if (!remain.contains("-")) {
+							String cards = RoomDao.lookCard(roomid, Integer.parseInt(remain));
+							RoomDao.currentOver(roomid);
+							sendAll(roomid, "系统消息", "游戏已结束，本轮游戏赢家：" + remain);
+
+							sendAllMsg(roomid, "win", remain+"-"+cards);
+							
+							if(RoomDao.isGameOver(roomid)){
+								RoomDao.gameover(roomid);
+								sendAll(roomid, "系统消息", "游戏已结束");
+								sendAllMsg(roomid, "gameover", "gameover");
+							}
+						} 
+					}
 				} else {
 					send("系统消息", "下注失败");
 					sendMsg("error", "下注失败");
@@ -160,10 +189,11 @@ public class WebSocketTest {
 					sendAll(roomid, uid + "", "弃牌");
 					sendAllMsg(roomid, "abandon", uid + "");
 					if (!remain.contains("-")) {
+						String cards = RoomDao.lookCard(roomid, Integer.parseInt(remain));
 						RoomDao.currentOver(roomid);
 						sendAll(roomid, "系统消息", "游戏已结束，本轮游戏赢家：" + remain);
 
-						sendAllMsg(roomid, "win", remain);
+						sendAllMsg(roomid, "win", remain+"-"+cards);
 						
 						if(RoomDao.isGameOver(roomid)){
 							RoomDao.gameover(roomid);
@@ -192,6 +222,15 @@ public class WebSocketTest {
 					sendMsg("error", "游戏未开始");
 					return;
 				}
+				
+				RoomBean bean = RoomDao.getRoom(roomid);
+				if(RoomDao.stakeCount(roomid, uid) < bean.getCompare()){
+					sendAll(roomid, "系统消息", "至少要"+bean.getCompare()+"轮后才能比牌");
+
+					sendAllMsg(roomid, "error", "compare must more than "+bean.getCompare());
+					return;
+				}
+				
 				sendAll(roomid, uid + "", "与" + msg + "比牌");
 
 				boolean flag = RoomDao.compareCard(roomid, uid,
@@ -208,9 +247,10 @@ public class WebSocketTest {
 				}
 				String remain = RoomDao.getRemain(roomid);
 				if (!remain.contains("-")) {
+					String cards = RoomDao.lookCard(roomid, Integer.parseInt(remain));
 					RoomDao.currentOver(roomid);
 					sendAll(roomid, "系统消息", "游戏已结束，本轮游戏赢家：" + remain);
-					sendAllMsg(roomid, "win", remain);
+					sendAllMsg(roomid, "win", remain+"-"+cards);
 					
 					if(RoomDao.isGameOver(roomid)){
 						RoomDao.gameover(roomid);
@@ -237,6 +277,14 @@ public class WebSocketTest {
 					sendMsg("error", "游戏未开始");
 					return;
 				}
+				RoomBean bean = RoomDao.getRoom(roomid);
+				if(RoomDao.stakeCount(roomid, uid) < bean.getLook()){
+					sendAll(roomid, "系统消息", "至少要"+bean.getLook()+"轮后才能看牌");
+
+					sendAllMsg(roomid, "error", "look must more than "+bean.getLook());
+					return;
+				}
+				
 				String flag = RoomDao.lookCard(roomid, uid);
 				send("系统消息", "看牌：" + flag);
 				sendMsg("look", flag);

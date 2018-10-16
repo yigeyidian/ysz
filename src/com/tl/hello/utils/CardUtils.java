@@ -69,6 +69,37 @@ public class CardUtils {
 		return 0;
 	}
 
+	public static int is235(String card){
+		String[] cards = card.split(",");
+		String c1 = cards[0].substring(1);
+		String c2 = cards[1].substring(1);
+		String c3 = cards[2].substring(1);
+		
+		if(c1.equals("2") && c2.equals("3") && c3.equals("5")){
+			return 1;
+		}
+		
+		if(c1.equals("2") && c2.equals("5") && c3.equals("3")){
+			return 1;
+		}
+		
+		if(c1.equals("3") && c2.equals("2") && c3.equals("5")){
+			return 1;
+		}
+		
+		if(c1.equals("3") && c2.equals("5") && c3.equals("2")){
+			return 1;
+		}
+		
+		if(c1.equals("5") && c2.equals("2") && c3.equals("3")){
+			return 1;
+		}
+		if(c1.equals("5") && c2.equals("3") && c3.equals("2")){
+			return 1;
+		}
+		return -1;
+	}
+	
 	public static int isAAA(String card) {
 		String[] cards = card.split(",");
 		String c1 = cards[0].substring(1);
