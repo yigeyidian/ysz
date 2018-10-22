@@ -89,7 +89,7 @@ public class CreateRoomServlet extends HttpServlet {
 			return;
 		}
 		response.getWriter().write(
-				Tools.getResponse(200, RoomDao.getRoomId(uid) + "", "创建房间成功"));
+				Tools.getResponse(200, RoomDao.getCreateRoomId(uid) + "", "创建房间成功"));
 	}
 
 }

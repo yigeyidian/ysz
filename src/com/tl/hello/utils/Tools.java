@@ -1,17 +1,35 @@
 package com.tl.hello.utils;
 
+import cn.jiguang.common.utils.Base64;
+
 import com.alibaba.fastjson.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+
+import org.apache.http.Header;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.params.CoreConnectionPNames;
 
 public class Tools {
 	public static String getResponse(int code, String data, String msg) {
@@ -118,4 +136,50 @@ public class Tools {
 		}
 		return newIds;
 	}
+	
+	public static boolean httpPostWithJson(String url,String content){
+	    boolean isSuccess = false;
+	    
+	    HttpPost post = null;
+	    try {
+	        HttpClient httpClient = new DefaultHttpClient();
+
+	        // 设置超时时间
+	        httpClient.getParams().setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 2000);
+	        httpClient.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, 2000);
+	            
+	        post = new HttpPost(url);
+	        // 构造消息头
+	        post.setHeader("Content-type", "application/json; charset=utf-8");
+	        post.setHeader("Connection", "Close");
+	        post.setHeader("Authorization", "Basic "+Base64.encode("appKey:e9c8d95d917dccde804b392d".getBytes()));
+	        // 构建消息实体
+	        StringEntity entity = new StringEntity(content, Charset.forName("UTF-8"));
+	        entity.setContentEncoding("UTF-8");
+	        // 发送Json格式的数据请求
+	        entity.setContentType("application/json");
+	        post.setEntity(entity);
+	        
+	            
+	        HttpResponse response = httpClient.execute(post);
+	            
+	        // 检验返回码
+	        System.out.println(response.toString());
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        isSuccess = false;
+	    }finally{
+	        if(post != null){
+	            try {
+	                post.releaseConnection();
+	                Thread.sleep(500);
+	            } catch (InterruptedException e) {
+	                e.printStackTrace();
+	            }
+	        }
+	    }
+	    return isSuccess;
+	}
+
+
 }

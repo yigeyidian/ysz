@@ -149,6 +149,29 @@ public class RoomDao {
 		}
 		return -1;
 	}
+	
+	public static int getCreateRoomId(int createId) {
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		try {
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
+
+			String sql = "SELECT * FROM room WHERE state=0 AND createid = ? order by createtime desc";
+			stmt = conn.prepareStatement(sql);
+			stmt.setInt(1, createId);
+			ResultSet rs = stmt.executeQuery();
+			if (rs.next()) {
+				return rs.getInt("roomid");
+			}
+			return -1;
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(stmt, conn);
+		}
+		return -1;
+	}
 
 	public static boolean checkRoom(int roomid) {
 		Connection conn = null;
@@ -215,7 +238,7 @@ public class RoomDao {
 
 		String players = getPlayers(roomid);
 		if (players != null && players.length() > 0
-				&& getPlayers(roomid).split("-").length >= max) {
+				&& players.split("-").length >= max) {
 			System.out.println("房间已满");
 			return false;
 		}
@@ -594,7 +617,7 @@ public class RoomDao {
 		return -1;
 	}
 
-	public static boolean nextPlayer(int roomid) {
+	public static boolean nextPlayer(int roomid,int uid) {
 		if (!checkRoom(roomid)) {
 			System.out.println("房间不存在");
 			return false;
@@ -606,8 +629,11 @@ public class RoomDao {
 		}
 
 		String curplayer = getCurPlayer(roomid);
-		if ((curplayer == null) || (curplayer.length() == 0)) {
+		if (curplayer == null || curplayer.length() == 0) {
 			System.out.println("游戏已结束");
+			return false;
+		}
+		if(!curplayer.equals(""+uid)){
 			return false;
 		}
 		Connection conn = null;
@@ -666,7 +692,7 @@ public class RoomDao {
 			stmt.setInt(2, roomid);
 			flag = stmt.executeUpdate() > 0;
 			if (curPlay.equals(playerid + "")) {
-				nextPlayer(roomid);
+				nextPlayer(roomid,playerid);
 			}
 			remain = Tools.removeId(remain, playerid + "");
 

@@ -19,7 +19,6 @@ public class UserDao {
 	static final String DB_URL = "jdbc:mysql://rm-wz9iyqu4qf6mr0s35so.mysql.rds.aliyuncs.com:3306/HELLO?user=root&password=Wang4664&useUnicode=true&characterEncoding=utf8&autoReconnect=true";
 	static final String USER = "root";
 	static final String PASS = "Wang4664";
-	
 
 	public static String getUser(String openid) {
 		Connection conn = null;
@@ -74,10 +73,7 @@ public class UserDao {
 		Statement stmt = null;
 		try {
 			Class.forName(JDBC_DRIVER);
-			conn = DriverManager
-					.getConnection(
-							DB_URL,
-							USER, PASS);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			stmt = conn.createStatement();
 			String sql = "SELECT * FROM user WHERE id= " + id;
 			ResultSet rs = stmt.executeQuery(sql);
@@ -109,23 +105,20 @@ public class UserDao {
 		return 0;
 	}
 
-	public static boolean bindPhone(String openid,int id,String phone){
-		
+	public static boolean bindPhone(String openid, int id, String phone) {
+
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		boolean flag = false;
 		try {
 			Class.forName(JDBC_DRIVER);
-			conn = DriverManager
-					.getConnection(
-							DB_URL,
-							USER, PASS);
-			String sql = "UPDATE user SET phone=? WHERE id=?&&openid=?";
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			String sql = "UPDATE user SET phone=? WHERE id=? AND openid=?";
 			stmt = conn.prepareStatement(sql);
 			stmt.setString(1, phone);
 			stmt.setInt(2, id);
 			stmt.setString(3, openid);
-			
+
 			flag = stmt.executeUpdate() > 0;
 			return flag;
 		} catch (Exception e) {
@@ -135,24 +128,21 @@ public class UserDao {
 		}
 		return flag;
 	}
-	
+
 	public static String roomRecord(int id) {
-		
+
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		try {
 			Class.forName(JDBC_DRIVER);
-			conn = DriverManager
-					.getConnection(
-							DB_URL,
-							USER, PASS);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			String sql = "SELECT * FROM room WHERE createid=?";
 			stmt = conn.prepareStatement(sql);
 			stmt.setInt(1, id);
-			
+
 			ResultSet set = stmt.executeQuery();
 			JSONArray jsonArray = new JSONArray();
-			while(set.next()){
+			while (set.next()) {
 				JSONObject jsonObject = new JSONObject();
 				jsonObject.put("roomid", set.getInt("roomid"));
 				jsonObject.put("createid", set.getInt("createid"));
@@ -178,24 +168,21 @@ public class UserDao {
 		}
 		return "";
 	}
-	
+
 	public static String gameRecord(int id) {
-		
+
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		try {
 			Class.forName(JDBC_DRIVER);
-			conn = DriverManager
-					.getConnection(
-							DB_URL,
-							USER, PASS);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			String sql = "SELECT * FROM player WHERE playerid=?";
 			stmt = conn.prepareStatement(sql);
 			stmt.setInt(1, id);
-			
+
 			ResultSet set = stmt.executeQuery();
 			JSONArray jsonArray = new JSONArray();
-			while(set.next()){
+			while (set.next()) {
 				JSONObject jsonObject = new JSONObject();
 				jsonObject.put("id", set.getInt("id"));
 				jsonObject.put("playerid", set.getInt("playerid"));
@@ -212,24 +199,21 @@ public class UserDao {
 		}
 		return "";
 	}
-	
+
 	public static String cardRecord(int id) {
-		
+
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		try {
 			Class.forName(JDBC_DRIVER);
-			conn = DriverManager
-					.getConnection(
-							DB_URL,
-							USER, PASS);
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			String sql = "SELECT * FROM card WHERE uid=?";
 			stmt = conn.prepareStatement(sql);
 			stmt.setInt(1, id);
-			
+
 			ResultSet set = stmt.executeQuery();
 			JSONArray jsonArray = new JSONArray();
-			while(set.next()){
+			while (set.next()) {
 				JSONObject jsonObject = new JSONObject();
 				jsonObject.put("id", set.getInt("id"));
 				jsonObject.put("uid", set.getInt("uid"));
@@ -246,7 +230,7 @@ public class UserDao {
 		}
 		return "";
 	}
-	
+
 	public static boolean saveUser(String openid, String nickname, String head,
 			String sex, String province, String city, String country) {
 		Connection conn = null;
@@ -254,8 +238,7 @@ public class UserDao {
 		boolean flag = false;
 		try {
 			Class.forName(JDBC_DRIVER);
-			conn = DriverManager
-					.getConnection(DB_URL);
+			conn = DriverManager.getConnection(DB_URL);
 			stmt = conn.createStatement();
 
 			String sql = "SELECT * FROM user WHERE openid= '" + openid + "'";
@@ -284,23 +267,55 @@ public class UserDao {
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (stmt != null) {
-					stmt.close();
-				}
-			} catch (SQLException localSQLException4) {
-			}
-			try {
-				if (conn != null) {
-					conn.close();
-				}
-			} catch (SQLException se) {
-				se.printStackTrace();
-			}
+			close(stmt, conn);
+		}
+		return false;
+	}
+
+	public static boolean saveCode(String phone, String messageid) {
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		boolean flag = false;
+		try {
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL);
+
+			String sql = "INSERT INTO code(phone,message_id) VALUES(?,?)";
+			stmt = conn.prepareStatement(sql);
+			stmt.setString(1, phone);
+			stmt.setString(2, messageid);
+			return stmt.executeUpdate() > 0;
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(stmt, conn);
 		}
 		return false;
 	}
 	
+	public static String getCode(String phone) {
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		boolean flag = false;
+		try {
+			Class.forName(JDBC_DRIVER);
+			conn = DriverManager.getConnection(DB_URL);
+
+			String sql = "SELECT message_id FROM code WHERE phone = ? order by createtime desc";
+			stmt = conn.prepareStatement(sql);
+			stmt.setString(1, phone);
+			ResultSet rs = stmt.executeQuery();
+			if (rs.next()) {
+				return rs.getString("message_id");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			close(stmt, conn);
+		}
+		return "";
+	}
+
 	private static void close(Statement stmt, Connection conn) {
 		try {
 			if (stmt != null) {

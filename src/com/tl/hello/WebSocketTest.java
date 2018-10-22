@@ -51,250 +51,352 @@ public class WebSocketTest {
 			String type = jsonObject.getString("type");
 			String msg = jsonObject.getString("msg");
 			if (type.equals("create")) {
-				boolean flag = RoomDao.createRoom(uid, 1, "2-4-8-20", 1, 1,
-						200, 20, 20, 8, 0, 6,0,0);
-				if (!flag) {
-					send("系统消息", "创建房间失败");
-					sendMsg("error", "创建房间失败");
-					return;
-				}
-				int roomId = RoomDao.getRoomId(uid);
-				flag = RoomDao.jionRoom(uid, RoomDao.getRoomId(uid));
-				if (!flag) {
-					send("系统消息", "加入房间失败");
-					sendMsg("error", "加入房间失败");
-					return;
-				}
-				send("系统消息", "创建房间成功，房号:" + roomId);
-				sendMsg("room", RoomDao.getRoomDetail(roomId));
-				webSocketMap.put(uid + "", this);
+				doCreate(uid,msg);
 			} else if (type.equals("jion")) {
-				boolean flag = RoomDao.jionRoom(uid, Integer.parseInt(msg));
-				if (!flag) {
-					send("系统消息", "加入房间失败");
-					sendMsg("error", "加入房间失败");
-					return;
-				}
-				try {
-					int roomid = Integer.parseInt(msg);
-					webSocketMap.put(uid + "", this);
-					sendAll(roomid, "系统消息", uid + "加入房间" + msg);
-					sendAllMsg(roomid, "jion", RoomDao.getAllPlayer(roomid));
-					sendMsg("room", RoomDao.getRoomDetail(roomid));
-				} catch (Exception e) {
-					sendMsg("error", "加入房间失败");
-					e.printStackTrace();
-				}
+				doJion(uid,msg);
 			} else if (type.equals("ready")) {
-				int roomid = RoomDao.isUserPlaying(uid);
-				if (roomid == -1) {
-					send("系统消息", "未加入房间");
-					sendMsg("error", "准备失败，未加入房间");
-					return;
-				}
-				boolean flag = RoomDao.ready(roomid, uid, 1);
-				if (!flag) {
-					send("系统消息", "准备失败");
-					sendMsg("error", "准备失败");
-					return;
-				}
-				if (RoomDao.checkReady(roomid)) {
-					sendAll(roomid, "系统消息", "所有玩家已准备，等待发牌");
-					sendAllMsg(roomid, "dealcard", "开始发票");
-
-					flag = RoomDao.dealCard(roomid);
-					if (flag) {
-						sendAll(roomid, "系统消息",
-								"发票完毕，该" + RoomDao.getCurPlayer(roomid)
-										+ "说话，剩余玩家" + RoomDao.getRemain(roomid));
-						JSONObject json = new JSONObject();
-						json.put("cur", RoomDao.getCurPlayer(roomid));
-						json.put("room", RoomDao.getRoomDetail(roomid));
-						json.put("player", RoomDao.getAllPlayer(roomid));
-						sendAllMsg(roomid, "waiting", json.toJSONString());
-					} else {
-						sendAll(roomid, "系统消息", "发牌失败");
-						sendAllMsg(roomid, "error", "发牌失败");
-					}
-				} else {
-					sendAll(roomid, uid + "", "已准备");
-					sendAllMsg(roomid, "ready", RoomDao.getAllPlayer(roomid));
-				}
+				doReady(uid,msg);
 			} else if (type.equals("stake")) {
-				int roomid = RoomDao.isUserPlaying(uid);
-				if (roomid == -1 || !RoomDao.isPlaying(roomid)) {
-					send("系统消息", "游戏未开始");
-					sendMsg("error", "游戏未开始");
-					return;
-				}
-				int stake = Integer.parseInt(msg);
-				
-				RoomBean bean = RoomDao.getRoom(roomid);
-				boolean islook = RoomDao.isLook(roomid, uid);
-				if(stake < (islook?bean.getCurstake():(int)(bean.getCurstake()/2.5f))){
-					send("系统消息", "下注失败，最少下注" + (islook?bean.getCurstake():(int)(bean.getCurstake()/2.5f)));
-					sendMsg("error", "下注失败，最少下注" + (islook?bean.getCurstake():(int)(bean.getCurstake()/2.5f)));
-					return;
-				}
-				
-				
-				boolean flag = RoomDao.stake(roomid, uid, stake);
-				if (flag) {
-					sendAll(roomid, uid + "", "下注" + msg);
-					sendAll(roomid, "系统消息", "改" + RoomDao.getCurPlayer(roomid)
-							+ "说话");
-
-					sendAllMsg(roomid, "stake", msg);
-					JSONObject json = new JSONObject();
-					json.put("cur", RoomDao.getCurPlayer(roomid));
-					json.put("room", RoomDao.getRoomDetail(roomid));
-					json.put("player", RoomDao.getAllPlayer(roomid));
-					sendAllMsg(roomid, "waiting", json.toJSONString());
-					
-					if(RoomDao.checkAllStake(roomid)){
-						sendAllMsg(roomid, "allcompare", "allcompare");
-						sendAll(roomid, "系统消息", "筹码已满，一起比牌");
-						
-						RoomDao.compareAll(roomid);
-						
-						String remain = RoomDao.getRemain(roomid);
-						if (!remain.contains("-")) {
-							String cards = RoomDao.lookCard(roomid, Integer.parseInt(remain));
-							RoomDao.currentOver(roomid);
-							sendAll(roomid, "系统消息", "游戏已结束，本轮游戏赢家：" + remain);
-
-							sendAllMsg(roomid, "win", remain+"-"+cards);
-							
-							if(RoomDao.isGameOver(roomid)){
-								RoomDao.gameover(roomid);
-								sendAll(roomid, "系统消息", "游戏已结束");
-								sendAllMsg(roomid, "gameover", "gameover");
-							}
-						} 
-					}
-				} else {
-					send("系统消息", "下注失败");
-					sendMsg("error", "下注失败");
-				}
+				doStake(uid,msg);
 			} else if (type.equals("abandon")) {
-				int roomid = RoomDao.isUserPlaying(uid);
-				if (roomid == -1 || !RoomDao.isPlaying(roomid)) {
-					send("系统消息", "游戏未开始");
-					sendMsg("error", "游戏未开始");
-					return;
-				}
-				boolean flag = RoomDao.abandon(roomid, uid);
-				if (flag) {
-					String remain = RoomDao.getRemain(roomid);
-					sendAll(roomid, uid + "", "弃牌");
-					sendAllMsg(roomid, "abandon", uid + "");
-					if (!remain.contains("-")) {
-						String cards = RoomDao.lookCard(roomid, Integer.parseInt(remain));
-						RoomDao.currentOver(roomid);
-						sendAll(roomid, "系统消息", "游戏已结束，本轮游戏赢家：" + remain);
-
-						sendAllMsg(roomid, "win", remain+"-"+cards);
-						
-						if(RoomDao.isGameOver(roomid)){
-							RoomDao.gameover(roomid);
-							sendAll(roomid, "系统消息", "游戏已结束");
-							sendAllMsg(roomid, "gameover", "gameover");
-						}
-					} else {
-						sendAll(roomid, "系统消息",
-								"改" + RoomDao.getCurPlayer(roomid)
-										+ "玩家说话，剩余玩家" + remain);
-						JSONObject json = new JSONObject();
-						json.put("cur", RoomDao.getCurPlayer(roomid));
-						json.put("room", RoomDao.getRoomDetail(roomid));
-						json.put("player", RoomDao.getAllPlayer(roomid));
-						sendAllMsg(roomid, "waiting", json.toJSONString());
-					}
-					
-				} else {
-					send("系统消息", "下注失败");
-					sendMsg("error", "弃牌失败");
-				}
+				doAbandon(uid,msg);
 			} else if (type.equals("compare")) {
-				int roomid = RoomDao.isUserPlaying(uid);
-				if (roomid == -1 || !RoomDao.isPlaying(roomid)) {
-					send("系统消息", "游戏未开始");
-					sendMsg("error", "游戏未开始");
-					return;
-				}
+				doCompare(uid,msg);
 				
-				RoomBean bean = RoomDao.getRoom(roomid);
-				if(RoomDao.stakeCount(roomid, uid) < bean.getCompare()){
-					sendAll(roomid, "系统消息", "至少要"+bean.getCompare()+"轮后才能比牌");
-
-					sendAllMsg(roomid, "error", "compare must more than "+bean.getCompare());
-					return;
-				}
-				
-				sendAll(roomid, uid + "", "与" + msg + "比牌");
-
-				boolean flag = RoomDao.compareCard(roomid, uid,
-						Integer.parseInt(msg));
-				if (flag) {
-					RoomDao.abandon(roomid, Integer.parseInt(msg));
-					sendAll(roomid, "系统消息", uid + "比牌赢," + msg + "弃牌");
-
-					sendAllMsg(roomid, "compare", uid + "-" + msg);
-				} else {
-					RoomDao.abandon(roomid, uid);
-					sendAll(roomid, "系统消息", uid + "比牌输," + uid + "弃牌");
-					sendAllMsg(roomid, "compare", msg + "-" + uid);
-				}
-				String remain = RoomDao.getRemain(roomid);
-				if (!remain.contains("-")) {
-					String cards = RoomDao.lookCard(roomid, Integer.parseInt(remain));
-					RoomDao.currentOver(roomid);
-					sendAll(roomid, "系统消息", "游戏已结束，本轮游戏赢家：" + remain);
-					sendAllMsg(roomid, "win", remain+"-"+cards);
-					
-					if(RoomDao.isGameOver(roomid)){
-						RoomDao.gameover(roomid);
-						sendAll(roomid, "系统消息", "游戏已结束");
-						sendAllMsg(roomid, "gameover", "gameover");
-					}
-				} else {
-					sendAll(roomid, "系统消息", "改" + RoomDao.getCurPlayer(roomid)
-							+ "玩家说话，剩余玩家" + remain);
-					JSONObject json = new JSONObject();
-					json.put("cur", RoomDao.getCurPlayer(roomid));
-					json.put("room", RoomDao.getRoomDetail(roomid));
-					json.put("player", RoomDao.getAllPlayer(roomid));
-					sendAllMsg(roomid, "waiting", json.toJSONString());
-
-				}
-				if (RoomDao.isGameOver(roomid)) {
-					sendAll(roomid, "系统消息", "游戏结束");
-					sendAllMsg(roomid, "gameover", "游戏结束");
-				}
 			} else if (type.equals("scancard")) {
-				int roomid = RoomDao.isUserPlaying(uid);
-				if (roomid == -1 || !RoomDao.isPlaying(roomid)) {
-					sendMsg("error", "游戏未开始");
-					return;
-				}
-				RoomBean bean = RoomDao.getRoom(roomid);
-				if(RoomDao.stakeCount(roomid, uid) < bean.getLook()){
-					sendAll(roomid, "系统消息", "至少要"+bean.getLook()+"轮后才能看牌");
-
-					sendAllMsg(roomid, "error", "look must more than "+bean.getLook());
-					return;
-				}
+				doScan(uid,msg);
 				
-				String flag = RoomDao.lookCard(roomid, uid);
-				send("系统消息", "看牌：" + flag);
-				sendMsg("look", flag);
 			} else if (type.equals("msg")) {
 				int roomid = RoomDao.isUserPlaying(uid);
 				if (roomid != -1) {
 					sendAllMsg(roomid, "msg", msg);
 				}
+			}else if(type.equals("exit")){
+				doExit(uid,msg);
 			}
 		}
+	}
+	
+	private void doExit(int uid, String msg) {
+		// TODO Auto-generated method stub
+		int roomid = RoomDao.isUserPlaying(uid);
+		if (roomid == -1) {
+			sendMsg("error", "玩家没有在房间");
+			return;
+		}
+		if(RoomDao.isPlaying(roomid)){
+			boolean flag = RoomDao.abandon(roomid, uid);
+			if (flag) {
+				String remain = RoomDao.getRemain(roomid);
+				sendAllMsg(roomid, "abandon", uid + "");
+				if (!remain.contains("-")) {
+					String cards = RoomDao.lookCard(roomid, Integer.parseInt(remain));
+					RoomDao.currentOver(roomid);
+					sendAllMsg(roomid, "win", remain+"-"+cards);
+					if(RoomDao.isGameOver(roomid)){
+						RoomDao.gameover(roomid);
+						sendAllMsg(roomid, "gameover", "gameover");
+					}
+				} else {
+					JSONObject json = new JSONObject();
+					json.put("cur", RoomDao.getCurPlayer(roomid));
+					json.put("room", RoomDao.getRoomDetail(roomid));
+					json.put("player", RoomDao.getAllPlayer(roomid));
+					sendAllMsg(roomid, "next", json.toJSONString());
+				}
+			} else {
+				sendMsg("error", "弃牌失败");
+			}
+			if(RoomDao.exitRoom(uid, roomid)){
+				sendAllMsg(roomid, "exit","exit-"+uid);
+				webSocketMap.remove(""+uid);
+			}else {
+				sendMsg("error","退出失败");
+			}
+		}else{
+			if(RoomDao.exitRoom(uid, roomid)){
+				sendAllMsg(roomid, "exit","exit-"+uid);
+				webSocketMap.remove(""+uid);
+			}else {
+				sendMsg("error","退出失败");
+			}
+		}
+	}
+
+	private void doScan(int uid, String msg) {
+		// TODO Auto-generated method stub
+		int roomid = RoomDao.isUserPlaying(uid);
+		if (roomid == -1 || !RoomDao.isPlaying(roomid)) {
+			sendMsg("error", "游戏未开始");
+			return;
+		}
+		RoomBean bean = RoomDao.getRoom(roomid);
+		if(RoomDao.stakeCount(roomid, uid) < bean.getLook()){
+			sendAllMsg(roomid, "error", "look-"+bean.getLook());
+			return;
+		}
+		
+		String flag = RoomDao.lookCard(roomid, uid);
+		sendMsg("look", flag);
+	}
+
+	private void doCompare(int uid, String msg) {
+		// TODO Auto-generated method stub
+		int roomid = RoomDao.isUserPlaying(uid);
+		if (roomid == -1 || !RoomDao.isPlaying(roomid)) {
+			sendMsg("error", "游戏未开始");
+			return;
+		}
+		
+		RoomBean bean = RoomDao.getRoom(roomid);
+		if(RoomDao.stakeCount(roomid, uid) < bean.getCompare()){
+			sendAllMsg(roomid, "error", "compare-"+bean.getCompare());
+			return;
+		}
+		try{
+			int oid = Integer.parseInt(msg);
+			
+			sendAll(roomid, uid + "", "与" + oid + "比牌");
+
+			boolean flag = RoomDao.compareCard(roomid, uid,oid);
+			if (flag) {
+				RoomDao.abandon(roomid, Integer.parseInt(msg));
+				sendAllMsg(roomid, "compare", uid + "-" + msg);
+			} else {
+				RoomDao.abandon(roomid, uid);
+				sendAllMsg(roomid, "compare", msg + "-" + uid);
+			}
+			String remain = RoomDao.getRemain(roomid);
+			if (!remain.contains("-")) {
+				String cards = RoomDao.lookCard(roomid, Integer.parseInt(remain));
+				RoomDao.currentOver(roomid);
+				sendAllMsg(roomid, "win", remain+"-"+cards);
+				
+				if(RoomDao.isGameOver(roomid)){
+					RoomDao.gameover(roomid);
+					sendAllMsg(roomid, "gameover", "gameover");
+				}
+				
+				if (RoomDao.isGameOver(roomid)) {
+					sendAllMsg(roomid, "gameover", "游戏结束");
+				}
+			} else {
+				sendAll(roomid, "系统消息", "改" + RoomDao.getCurPlayer(roomid)
+						+ "玩家说话，剩余玩家" + remain);
+				JSONObject json = new JSONObject();
+				json.put("cur", RoomDao.getCurPlayer(roomid));
+				json.put("room", RoomDao.getRoomDetail(roomid));
+				json.put("player", RoomDao.getAllPlayer(roomid));
+				sendAllMsg(roomid, "next", json.toJSONString());
+
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+			sendMsg("error", "消息错误");
+		}
+	}
+
+	private void doAbandon(int uid,String msg) {
+		// TODO Auto-generated method stub
+		int roomid = RoomDao.isUserPlaying(uid);
+		if (roomid == -1 || !RoomDao.isPlaying(roomid)) {
+			sendMsg("error", "游戏未开始");
+			return;
+		}
+		boolean flag = RoomDao.abandon(roomid, uid);
+		if (flag) {
+			String remain = RoomDao.getRemain(roomid);
+			sendAllMsg(roomid, "abandon", uid + "");
+			if (!remain.contains("-")) {
+				String cards = RoomDao.lookCard(roomid, Integer.parseInt(remain));
+				RoomDao.currentOver(roomid);
+				sendAllMsg(roomid, "win", remain+"-"+cards);
+				if(RoomDao.isGameOver(roomid)){
+					RoomDao.gameover(roomid);
+					sendAll(roomid, "系统消息", "游戏已结束");
+					sendAllMsg(roomid, "gameover", "gameover");
+				}
+			} else {
+				JSONObject json = new JSONObject();
+				json.put("cur", RoomDao.getCurPlayer(roomid));
+				json.put("room", RoomDao.getRoomDetail(roomid));
+				json.put("player", RoomDao.getAllPlayer(roomid));
+				sendAllMsg(roomid, "next", json.toJSONString());
+			}
+			
+		} else {
+			sendMsg("error", "弃牌失败");
+		}
+	}
+
+	private void doStake(int uid, String msg) {
+		int roomid = RoomDao.isUserPlaying(uid);
+		if (roomid == -1 || !RoomDao.isPlaying(roomid)) {
+			sendMsg("error", "游戏未开始");
+			return;
+		}
+		try{
+			int stake = Integer.parseInt(msg);
+			RoomBean bean = RoomDao.getRoom(roomid);
+			boolean islook = RoomDao.isLook(roomid, uid);
+			if(stake < (islook?bean.getCurstake():(int)(bean.getCurstake()/2.5f))){
+				sendMsg("error", "下注失败，最少下注" + (islook?bean.getCurstake():(int)(bean.getCurstake()/2.5f)));
+				return;
+			}
+			
+			boolean flag = RoomDao.stake(roomid, uid, stake);
+			if (flag) {
+				sendAll(roomid, uid + "", "下注" + msg);
+				
+				sendAllMsg(roomid, "stake", uid+"-"+msg);
+				
+				if(RoomDao.nextPlayer(roomid,uid)){
+					JSONObject json = new JSONObject();
+					json.put("cur", RoomDao.getCurPlayer(roomid));
+					json.put("room", RoomDao.getRoomDetail(roomid));
+					json.put("player", RoomDao.getAllPlayer(roomid));
+					sendAllMsg(roomid, "next", json.toJSONString());
+					
+					if(RoomDao.checkAllStake(roomid)){
+						sendAllMsg(roomid, "allcompare", "筹码已满，一起比牌");
+						RoomDao.compareAll(roomid);
+						String remain = RoomDao.getRemain(roomid);
+						if (!remain.contains("-")) {
+							String cards = RoomDao.lookCard(roomid, Integer.parseInt(remain));
+							RoomDao.currentOver(roomid);
+
+							sendAllMsg(roomid, "win", remain+"-"+cards);
+							
+							if(RoomDao.isGameOver(roomid)){
+								RoomDao.gameover(roomid);
+								sendAllMsg(roomid, "gameover", "游戏已结束");
+							}
+						} 
+					}
+				}else {
+					sendMsg("error", "切换玩家失败");
+				}
+			} else {
+				sendMsg("error", "下注失败");
+			}
+		}catch(Exception e){
+			sendMsg("error", "消息错误");
+		}
+	}
+
+	private void doReady(int uid, String msg) {
+		// TODO Auto-generated method stub
+		int roomid = RoomDao.isUserPlaying(uid);
+		if (roomid == -1) {
+			sendMsg("error", "准备失败，未加入房间");
+			return;
+		}
+		int ready = 1;
+		try{
+			ready = Integer.parseInt(msg);
+		}catch(Exception e){
+			sendMsg("error", "消息错误");
+			return;
+		}
+		boolean flag = RoomDao.ready(roomid, uid, ready);
+		if (!flag) {
+			sendMsg("error", "操作失败");
+			return;
+		}
+		if (RoomDao.checkReady(roomid)) {
+			sendAll(roomid, "系统消息", "所有玩家已准备，等待发牌");
+			sendAllMsg(roomid, "dealcard", "开始发票");
+
+			flag = RoomDao.dealCard(roomid);
+			if (flag) {
+				sendAll(roomid, "系统消息",
+						"发票完毕，该" + RoomDao.getCurPlayer(roomid)
+								+ "说话，剩余玩家" + RoomDao.getRemain(roomid));
+				JSONObject json = new JSONObject();
+				json.put("cur", RoomDao.getCurPlayer(roomid));
+				json.put("room", RoomDao.getRoomDetail(roomid));
+				json.put("player", RoomDao.getAllPlayer(roomid));
+				sendAllMsg(roomid, "waiting", json.toJSONString());
+			} else {
+				sendAll(roomid, "系统消息", "发牌失败");
+				sendAllMsg(roomid, "error", "发牌失败");
+			}
+		} else {
+			sendAll(roomid, uid + "", ready==1?"已准备":"取消准备");
+			sendAllMsg(roomid, "ready", RoomDao.getAllPlayer(roomid));
+		}
+	}
+
+	//加入房间
+	private void doJion(int uid, String msg) {
+		// TODO Auto-generated method stub
+		try {
+			int roomid = Integer.parseInt(msg);
+			int r = RoomDao.isUserPlaying(uid);
+			if (r > 0) {
+				sendMsg("error", "玩家已在"+r+"房间中");
+				return;
+			}
+			if (!RoomDao.checkRoom(roomid)) {
+				sendMsg("error", "房间号不存在");
+				return;
+			}
+			if(r == roomid){
+				webSocketMap.remove(uid+"");
+				webSocketMap.put(uid + "", this);
+				sendAll(roomid, "系统消息", uid + "加入房间" + msg);
+				sendAllMsg(roomid, "jion", RoomDao.getAllPlayer(roomid));
+				sendMsg("room", RoomDao.getRoomDetail(roomid));
+				return;
+			}
+			int max = RoomDao.getRoomMaxPlayer(roomid);
+
+			String players = RoomDao.getPlayers(roomid);
+			if (players != null && players.length() > 0
+					&& players.split("-").length >= max) {
+				System.out.println("房间已满");
+				send("系统消息", "房间已满");
+				sendMsg("error", "房间已满");
+				return;
+			}
+			
+			boolean flag = RoomDao.jionRoom(uid, roomid);
+			if (!flag) {
+				send("系统消息", "加入房间失败");
+				sendMsg("error", "加入房间失败");
+				return;
+			}
+			webSocketMap.remove(uid+"");
+			webSocketMap.put(uid + "", this);
+			sendAll(roomid, "系统消息", uid + "加入房间" + msg);
+			sendAllMsg(roomid, "jion", RoomDao.getAllPlayer(roomid));
+			sendMsg("room", RoomDao.getRoomDetail(roomid));
+		} catch (Exception e) {
+			sendMsg("error", "加入房间失败");
+			e.printStackTrace();
+		}
+	}
+
+	//加入房间 测试专用
+	private void doCreate(int uid, String msg) {
+		// TODO Auto-generated method stub
+		boolean flag = RoomDao.createRoom(uid, 1, "2-4-8-20", 1, 1,
+				200, 20, 20, 8, 0, 6,0,0);
+		if (!flag) {
+			send("系统消息", "创建房间失败");
+			sendMsg("error", "创建房间失败");
+			return;
+		}
+		int roomId = RoomDao.getRoomId(uid);
+		flag = RoomDao.jionRoom(uid, RoomDao.getRoomId(uid));
+		if (!flag) {
+			send("系统消息", "加入房间失败");
+			sendMsg("error", "加入房间失败");
+			return;
+		}
+		send("系统消息", "创建房间成功，房号:" + roomId);
+		sendMsg("room", RoomDao.getRoomDetail(roomId));
+		webSocketMap.put(uid + "", this);
 	}
 
 	public void sendAll(int roomid, String uid, String msg) {
