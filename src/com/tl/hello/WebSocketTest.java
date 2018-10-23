@@ -62,10 +62,8 @@ public class WebSocketTest {
 				doAbandon(uid,msg);
 			} else if (type.equals("compare")) {
 				doCompare(uid,msg);
-				
 			} else if (type.equals("scancard")) {
 				doScan(uid,msg);
-				
 			} else if (type.equals("msg")) {
 				int roomid = RoomDao.isUserPlaying(uid);
 				if (roomid != -1) {
@@ -102,7 +100,7 @@ public class WebSocketTest {
 					json.put("cur", RoomDao.getCurPlayer(roomid));
 					json.put("room", RoomDao.getRoomDetail(roomid));
 					json.put("player", RoomDao.getAllPlayer(roomid));
-					sendAllMsg(roomid, "next", json.toJSONString());
+					sendAllMsg(roomid, "waiting", json.toJSONString());
 				}
 			} else {
 				sendMsg("error", "弃牌失败");
@@ -187,7 +185,7 @@ public class WebSocketTest {
 				json.put("cur", RoomDao.getCurPlayer(roomid));
 				json.put("room", RoomDao.getRoomDetail(roomid));
 				json.put("player", RoomDao.getAllPlayer(roomid));
-				sendAllMsg(roomid, "next", json.toJSONString());
+				sendAllMsg(roomid, "waiting", json.toJSONString());
 
 			}
 		}catch(Exception e){
@@ -196,7 +194,7 @@ public class WebSocketTest {
 		}
 	}
 
-	private void doAbandon(int uid,String msg) {
+	public void doAbandon(int uid,String msg) {
 		// TODO Auto-generated method stub
 		int roomid = RoomDao.isUserPlaying(uid);
 		if (roomid == -1 || !RoomDao.isPlaying(roomid)) {
@@ -221,7 +219,7 @@ public class WebSocketTest {
 				json.put("cur", RoomDao.getCurPlayer(roomid));
 				json.put("room", RoomDao.getRoomDetail(roomid));
 				json.put("player", RoomDao.getAllPlayer(roomid));
-				sendAllMsg(roomid, "next", json.toJSONString());
+				sendAllMsg(roomid, "waiting", json.toJSONString());
 			}
 			
 		} else {
@@ -255,7 +253,7 @@ public class WebSocketTest {
 					json.put("cur", RoomDao.getCurPlayer(roomid));
 					json.put("room", RoomDao.getRoomDetail(roomid));
 					json.put("player", RoomDao.getAllPlayer(roomid));
-					sendAllMsg(roomid, "next", json.toJSONString());
+					sendAllMsg(roomid, "waiting", json.toJSONString());
 					
 					if(RoomDao.checkAllStake(roomid)){
 						sendAllMsg(roomid, "allcompare", "筹码已满，一起比牌");
@@ -284,7 +282,7 @@ public class WebSocketTest {
 		}
 	}
 
-	private void doReady(int uid, String msg) {
+	public void doReady(int uid, String msg) {
 		// TODO Auto-generated method stub
 		int roomid = RoomDao.isUserPlaying(uid);
 		if (roomid == -1) {
@@ -295,8 +293,8 @@ public class WebSocketTest {
 		try{
 			ready = Integer.parseInt(msg);
 		}catch(Exception e){
-			sendMsg("error", "消息错误");
-			return;
+//			sendMsg("error", "消息错误");
+//			return;
 		}
 		boolean flag = RoomDao.ready(roomid, uid, ready);
 		if (!flag) {
@@ -328,19 +326,11 @@ public class WebSocketTest {
 	}
 
 	//加入房间
-	private void doJion(int uid, String msg) {
+	public void doJion(int uid, String msg) {
 		// TODO Auto-generated method stub
 		try {
 			int roomid = Integer.parseInt(msg);
 			int r = RoomDao.isUserPlaying(uid);
-			if (r > 0) {
-				sendMsg("error", "玩家已在"+r+"房间中");
-				return;
-			}
-			if (!RoomDao.checkRoom(roomid)) {
-				sendMsg("error", "房间号不存在");
-				return;
-			}
 			if(r == roomid){
 				webSocketMap.remove(uid+"");
 				webSocketMap.put(uid + "", this);
@@ -349,20 +339,24 @@ public class WebSocketTest {
 				sendMsg("room", RoomDao.getRoomDetail(roomid));
 				return;
 			}
+			if (r > 0) {
+				sendMsg("error", "玩家已在"+r+"房间中");
+				return;
+			}
+			if (!RoomDao.checkRoom(roomid)) {
+				sendMsg("error", "房间号不存在");
+				return;
+			}
 			int max = RoomDao.getRoomMaxPlayer(roomid);
-
 			String players = RoomDao.getPlayers(roomid);
 			if (players != null && players.length() > 0
 					&& players.split("-").length >= max) {
-				System.out.println("房间已满");
-				send("系统消息", "房间已满");
 				sendMsg("error", "房间已满");
 				return;
 			}
 			
 			boolean flag = RoomDao.jionRoom(uid, roomid);
 			if (!flag) {
-				send("系统消息", "加入房间失败");
 				sendMsg("error", "加入房间失败");
 				return;
 			}
@@ -442,7 +436,8 @@ public class WebSocketTest {
 	}
 
 	public void sendMessage(String message) throws IOException {
-		this.session.getBasicRemote().sendText(message);
+		if(this.session != null){
+		this.session.getBasicRemote().sendText(message);}
 	}
 
 	public static synchronized int getOnlineCount() {

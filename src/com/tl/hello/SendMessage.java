@@ -68,13 +68,14 @@ public class SendMessage extends HttpServlet {
 		try {
 			String rw = HttpUtils.doPost("https://api.sms.jpush.cn/v1/codes",
 					jsonObject.toJSONString());
+			System.out.println(rw);
 			if (rw != null && rw.length() > 0) {
 				if (JSON.parseObject(rw).containsKey("msg_id")) {
 					if (UserDao.saveCode(phone,
 							JSON.parseObject(rw).getString("msg_id"))) {
 						response.getWriter().write(
-								Tools.getResponse(-1, "get code failed",
-										"获取验证码失败"));
+								Tools.getResponse(200, "success",
+										"发送成功"));
 						return;
 					} else {
 						response.getWriter().write(

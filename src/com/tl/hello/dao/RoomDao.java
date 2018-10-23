@@ -149,7 +149,7 @@ public class RoomDao {
 		}
 		return -1;
 	}
-	
+
 	public static int getCreateRoomId(int createId) {
 		Connection conn = null;
 		PreparedStatement stmt = null;
@@ -245,16 +245,21 @@ public class RoomDao {
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		boolean flag = false;
+		boolean isFirst = false;
 		try {
 			Class.forName(JDBC_DRIVER);
 			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 
 			if (players == null || players.length() == 0) {
 				players = playerid + "";
+				isFirst = true;
 			} else {
 				players = players + "-" + playerid;
 			}
-			String sql = "UPDATE room SET players=? WHERE roomid=?";
+			String sql = "UPDATE room SET players=?"
+					+ (isFirst ? (", curplayer=" + players) : "")
+					+ " WHERE roomid=?";
+			System.out.println(sql);
 			stmt = conn.prepareStatement(sql);
 			stmt.setString(1, players);
 			stmt.setInt(2, roomid);
@@ -298,6 +303,8 @@ public class RoomDao {
 			players = Tools.removeId(players, playerid + "");
 			String sql = "UPDATE room SET players=? WHERE roomid=?";
 			stmt = conn.prepareStatement(sql);
+			stmt.setString(1, players);
+			stmt.setInt(2, roomid);
 			return stmt.executeUpdate(sql) > 0;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -367,7 +374,8 @@ public class RoomDao {
 		}
 
 		String players = getPlayers(roomid);
-		if (players == null || players.length() == 0) {
+		int max = getRoomMaxPlayer(roomid);
+		if (players == null || players.split("-").length == 0 || players.split("-").length < max) {
 			System.out.println("没有玩家");
 			return false;
 		}
@@ -617,7 +625,7 @@ public class RoomDao {
 		return -1;
 	}
 
-	public static boolean nextPlayer(int roomid,int uid) {
+	public static boolean nextPlayer(int roomid, int uid) {
 		if (!checkRoom(roomid)) {
 			System.out.println("房间不存在");
 			return false;
@@ -633,7 +641,7 @@ public class RoomDao {
 			System.out.println("游戏已结束");
 			return false;
 		}
-		if(!curplayer.equals(""+uid)){
+		if (!curplayer.equals("" + uid)) {
 			return false;
 		}
 		Connection conn = null;
@@ -692,7 +700,7 @@ public class RoomDao {
 			stmt.setInt(2, roomid);
 			flag = stmt.executeUpdate() > 0;
 			if (curPlay.equals(playerid + "")) {
-				nextPlayer(roomid,playerid);
+				nextPlayer(roomid, playerid);
 			}
 			remain = Tools.removeId(remain, playerid + "");
 
@@ -833,7 +841,8 @@ public class RoomDao {
 
 		String cards = lookCard(roomid, Integer.parseInt(remain));
 
-		String allPlayer = getAllPlayer(roomid);
+		String allPlayer = getPlayers(roomid);
+		System.out.println(allPlayer);
 		boolean nolook = isNoLook(roomid, Integer.parseInt(remain));
 
 		Connection conn = null;
@@ -887,7 +896,7 @@ public class RoomDao {
 				String[] playerids = allPlayer.split("-");
 				for (int i = 0; i < playerids.length; i++) {
 					sql = "UPDATE player SET ready=0,abandon=0,islook=0,curstake=0,stake=stake-"
-							+ awardCount + " WHERE playerid=" + remain;
+							+ awardCount + " WHERE playerid=" + playerids[i];
 					System.out.println(sql);
 					flag = stmt.executeUpdate(sql) > 0;
 				}
@@ -973,7 +982,8 @@ public class RoomDao {
 			stmt = conn.createStatement();
 			String sql = "UPDATE player SET stake=stake-" + stake
 					+ ",curstake=" + stake + ",nolook=" + nolook
-					+ ",stakecount=stakecount+1 WHERE playerid=" + playerid + " AND roomid=" + roomid;
+					+ ",stakecount=stakecount+1 WHERE playerid=" + playerid
+					+ " AND roomid=" + roomid;
 			flag = stmt.executeUpdate(sql) > 0;
 
 			sql = "UPDATE room SET allstake=allstake+" + stake + ",curstake="
@@ -1042,12 +1052,12 @@ public class RoomDao {
 			}
 		}
 
-		//currentOver(roomid);
+		// currentOver(roomid);
 
 		return false;
 	}
 
-	public static int stakeCount(int roomid,int playerid) {
+	public static int stakeCount(int roomid, int playerid) {
 		if (isUserPlaying(playerid) != roomid) {
 			System.out.println("玩家不在当前房间");
 			return -1;
@@ -1078,7 +1088,7 @@ public class RoomDao {
 		}
 		return -1;
 	}
-	
+
 	public static boolean isEating(int roomid) {
 		if (!checkRoom(roomid)) {
 			System.out.println("房间不存在");
@@ -1205,7 +1215,7 @@ public class RoomDao {
 		}
 		return "";
 	}
-	
+
 	public static RoomBean getRoom(int roomid) {
 		if (!checkRoom(roomid)) {
 			System.out.println("房间不存在");
@@ -1220,7 +1230,7 @@ public class RoomDao {
 
 			String sql = "SELECT * FROM room WHERE roomid= " + roomid;
 			ResultSet rs = stmt.executeQuery(sql);
-			RoomBean bean = new  RoomBean();
+			RoomBean bean = new RoomBean();
 			if (rs.next()) {
 				bean.setRoomid(rs.getInt("roomid"));
 				bean.setCreateid(rs.getInt("createid"));
@@ -1266,6 +1276,12 @@ public class RoomDao {
 			stmt = conn.createStatement();
 
 			String sql = "SELECT * FROM player WHERE roomid= " + roomid;
+			// sql =
+			// "SELECT a.id,a.roomid,a.playerid,a.stake,a.cards,a.abandon,a.ready,a.islook,b.head FROM player AS a,user AS b WHERE a.playerid=b.id AND a.roomid="
+			// + roomid;
+			// sql =
+			// "SELECT * FROM player AS a,user AS b WHERE a.playerid=b.id AND a.roomid="
+			// + roomid;
 			ResultSet rs = stmt.executeQuery(sql);
 			JSONArray jsonArray = new JSONArray();
 			while (rs.next()) {

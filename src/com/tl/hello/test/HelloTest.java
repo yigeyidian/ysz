@@ -6,6 +6,7 @@ import cn.jiguang.common.resp.ResponseWrapper;
 import cn.jiguang.common.utils.Base64;
 
 import com.alibaba.fastjson.JSONObject;
+import com.tl.hello.WebSocketTest;
 import com.tl.hello.dao.RoomDao;
 import com.tl.hello.dao.UserDao;
 import com.tl.hello.utils.HttpUtils;
@@ -26,7 +27,8 @@ public class HelloTest
 //    		"https://wx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTI1NJSEuuWZrm81aficaLZEK2WnzUMDf47J1ickhvINMA6mIgr4sIicia8KYp56Uj1icSicnjLABVrqNhUg/132",
 //    		"1", "", "", ""));
 //	  int flag = RoomDao.getCreateRoomId(10002);
-	  System.out.println(UserDao.getCode("18123286739"));
+	  //System.out.println(RoomDao.getRoomMaxPlayer(100032));
+	  new WebSocketTest().doAbandon(10791, "100032");
 //	  JSONObject jsonObject = new JSONObject();
 //		jsonObject.put("mobile", "18123286739");
 //		jsonObject.put("temp_id", 1);

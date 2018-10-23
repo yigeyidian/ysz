@@ -70,7 +70,7 @@ public class CardUtils {
 	}
 
 	public static int is235(String card){
-		String[] cards = card.split(",");
+		String[] cards = card.split("-");
 		String c1 = cards[0].substring(1);
 		String c2 = cards[1].substring(1);
 		String c3 = cards[2].substring(1);
@@ -101,7 +101,8 @@ public class CardUtils {
 	}
 	
 	public static int isAAA(String card) {
-		String[] cards = card.split(",");
+		System.out.println(card);
+		String[] cards = card.split("-");
 		String c1 = cards[0].substring(1);
 		String c2 = cards[1].substring(1);
 		String c3 = cards[2].substring(1);
@@ -112,7 +113,7 @@ public class CardUtils {
 	}
 
 	public static int isTH(String card) {
-		String[] cards = card.split(",");
+		String[] cards = card.split("-");
 		if ((cards[0].charAt(0) == cards[1].charAt(0))
 				&& (cards[2].charAt(0) == cards[1].charAt(0))) {
 			return getMax(card);
@@ -121,7 +122,7 @@ public class CardUtils {
 	}
 
 	public static int isSort(String card) {
-		String[] cards = card.split(",");
+		String[] cards = card.split("-");
 		int c1 = Integer.parseInt(cards[0].substring(1));
 		int c2 = Integer.parseInt(cards[1].substring(1));
 		int c3 = Integer.parseInt(cards[2].substring(1));
@@ -154,7 +155,7 @@ public class CardUtils {
 	}
 
 	public static int isDouble(String card) {
-		String[] cards = card.split(",");
+		String[] cards = card.split("-");
 		int c1 = Integer.parseInt(cards[0].substring(1));
 		int c2 = Integer.parseInt(cards[1].substring(1));
 		int c3 = Integer.parseInt(cards[2].substring(1));
@@ -168,7 +169,7 @@ public class CardUtils {
 	}
 
 	public static int isDouble2(String card) {
-		String[] cards = card.split(",");
+		String[] cards = card.split("-");
 		int c1 = Integer.parseInt(cards[0].substring(1));
 		int c2 = Integer.parseInt(cards[1].substring(1));
 		int c3 = Integer.parseInt(cards[2].substring(1));
@@ -182,7 +183,7 @@ public class CardUtils {
 	}
 
 	public static int getMax(String card) {
-		String[] cards = card.split(",");
+		String[] cards = card.split("-");
 		int c1 = Integer.parseInt(cards[0].substring(1));
 		int c2 = Integer.parseInt(cards[1].substring(1));
 		int c3 = Integer.parseInt(cards[2].substring(1));
