@@ -27,8 +27,8 @@ public class HelloTest
 //    		"https://wx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTI1NJSEuuWZrm81aficaLZEK2WnzUMDf47J1ickhvINMA6mIgr4sIicia8KYp56Uj1icSicnjLABVrqNhUg/132",
 //    		"1", "", "", ""));
 //	  int flag = RoomDao.getCreateRoomId(10002);
-	  //System.out.println(RoomDao.getRoomMaxPlayer(100032));
-	  new WebSocketTest().doAbandon(10791, "100032");
+	  System.out.println(RoomDao.jionRoom(10002, 100033));
+	  //new WebSocketTest().doAbandon(10791, "100032");
 //	  JSONObject jsonObject = new JSONObject();
 //		jsonObject.put("mobile", "18123286739");
 //		jsonObject.put("temp_id", 1);

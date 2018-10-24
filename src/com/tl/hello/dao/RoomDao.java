@@ -270,6 +270,10 @@ public class RoomDao {
 						+ playerid
 						+ ",200,'',0,0,0,0,CURRENT_TIME())";
 				flag = stmt.executeUpdate(sql) > 0;
+				sql = "UPDATE player p SET head = (SELECT head FROM user WHERE id =p.playerid) WHERE playerid="
+						+ playerid;
+				System.out.println(sql);
+				flag = stmt.executeUpdate(sql) > 0;
 			}
 			return flag;
 		} catch (Exception e) {
@@ -375,7 +379,8 @@ public class RoomDao {
 
 		String players = getPlayers(roomid);
 		int max = getRoomMaxPlayer(roomid);
-		if (players == null || players.split("-").length == 0 || players.split("-").length < max) {
+		if (players == null || players.split("-").length == 0
+				|| players.split("-").length < max) {
 			System.out.println("没有玩家");
 			return false;
 		}

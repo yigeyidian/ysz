@@ -49,15 +49,9 @@ public class BindPhoneServlet extends HttpServlet {
 		request.setCharacterEncoding("UTF-8");
 		response.setHeader("Content-Type", "text/html;charset=UTF-8");
 
-		String openid = request.getParameter("openid");
 		String idstr = request.getParameter("id");
 		String phone = request.getParameter("phone");
 		String code = request.getParameter("code");
-		if ((openid == null) || (openid.trim().length() == 0)) {
-			response.getWriter().write(
-					Tools.getResponse(-1, "openid is null", "绑定失败"));
-			return;
-		}
 
 		if ((idstr == null) || (idstr.trim().length() == 0)) {
 			response.getWriter().write(
@@ -86,8 +80,11 @@ public class BindPhoneServlet extends HttpServlet {
 				return;
 			}
 
+			System.out.println(msg_id);
+			JSONObject jsonObject = new JSONObject();
+			jsonObject.put("code", code);
 			String rw = HttpUtils.doPost("https://api.sms.jpush.cn/v1/codes/"
-					+ msg_id + "/valid", "");
+					+ msg_id + "/valid", jsonObject.toJSONString());
 			if (rw == null || rw.length() == 0) {
 				response.getWriter().write(
 						Tools.getResponse(-1, "验证码错误", "绑定失败"));
@@ -96,7 +93,7 @@ public class BindPhoneServlet extends HttpServlet {
 			JSONObject jo = JSON.parseObject(rw);
 			if (jo.getBoolean("is_valid")) {
 				int id = Integer.parseInt(idstr);
-				boolean flag = UserDao.bindPhone(openid, id, phone);
+				boolean flag = UserDao.bindPhone(id, phone);
 				if (flag) {
 					response.getWriter().write(
 							Tools.getResponse(200, "bind success", "绑定成功"));

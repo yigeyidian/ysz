@@ -105,7 +105,7 @@ public class UserDao {
 		return 0;
 	}
 
-	public static boolean bindPhone(String openid, int id, String phone) {
+	public static boolean bindPhone(int id, String phone) {
 
 		Connection conn = null;
 		PreparedStatement stmt = null;
@@ -113,12 +113,11 @@ public class UserDao {
 		try {
 			Class.forName(JDBC_DRIVER);
 			conn = DriverManager.getConnection(DB_URL, USER, PASS);
-			String sql = "UPDATE user SET phone=? WHERE id=? AND openid=?";
+			String sql = "UPDATE user SET phone=? WHERE id=?";
 			stmt = conn.prepareStatement(sql);
 			stmt.setString(1, phone);
 			stmt.setInt(2, id);
-			stmt.setString(3, openid);
-
+			
 			flag = stmt.executeUpdate() > 0;
 			return flag;
 		} catch (Exception e) {

@@ -81,6 +81,11 @@ public class CreateRoomServlet extends HttpServlet {
 					Tools.getResponse(-1, "card is 0", "房卡不足"));
 			return;
 		}
+		if(RoomDao.isUserPlaying(uid) > 0){
+			response.getWriter().write(
+					Tools.getResponse(-1, "error", "玩家正在游戏中"));
+			return;
+		}
 		boolean flag = RoomDao.createRoom(uid, base, ships, lookcount,
 				comparecount, max, wait, think, bout, awardnum,maxPlayer,awardtype,eattype);
 		if (!flag) {

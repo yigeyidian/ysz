@@ -1,9 +1,5 @@
 package com.tl.hello.utils;
 
-
-
- 
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -12,12 +8,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
- 
-
-
-
-
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -41,196 +31,182 @@ import org.apache.log4j.Logger;
 
 import cn.jiguang.common.utils.Base64;
 
- 
 public class HttpUtils {
 
 	public static String doGet(String url) {
 
-        try {
+		try {
 
-        	HttpClient client = new DefaultHttpClient();
+			HttpClient client = new DefaultHttpClient();
 
-            //发送get请求
+			// 发送get请求
 
-            HttpGet request = new HttpGet(url);
+			HttpGet request = new HttpGet(url);
 
-            HttpResponse response = client.execute(request);
+			HttpResponse response = client.execute(request);
 
- 
+			/** 请求发送成功，并得到响应 **/
 
-            /**请求发送成功，并得到响应**/
+			if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
 
-            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+				/** 读取服务器返回过来的json字符串数据 **/
 
-                /**读取服务器返回过来的json字符串数据**/
+				String strResult = EntityUtils.toString(response.getEntity());
 
-                String strResult = EntityUtils.toString(response.getEntity());
+				return strResult;
 
-                
+			}
 
-                return strResult;
+		}
 
-            }
+		catch (IOException e) {
 
-        } 
+			e.printStackTrace();
 
-        catch (IOException e) {
+		}
 
-        	e.printStackTrace();
-
-        }
-
-        
-
-        return null;
+		return null;
 
 	}
 
-	
-	public static String doPost(String url, Map params){
+	public static String doPost(String url, Map params) {
 
-		
+		BufferedReader in = null;
 
-		BufferedReader in = null;  
+		try {
 
-        try {  
+			// 定义HttpClient
 
-            // 定义HttpClient  
+			HttpClient client = new DefaultHttpClient();
 
-            HttpClient client = new DefaultHttpClient();  
+			// 实例化HTTP方法
 
-            // 实例化HTTP方法  
+			HttpPost request = new HttpPost();
 
-            HttpPost request = new HttpPost();  
+			request.setURI(new URI(url));
 
-            request.setURI(new URI(url));
+			// 设置参数
 
-           
+			List<NameValuePair> nvps = new ArrayList<NameValuePair>();
 
-            //设置参数
+			for (Iterator iter = params.keySet().iterator(); iter.hasNext();) {
 
-            List<NameValuePair> nvps = new ArrayList<NameValuePair>(); 
+				String name = (String) iter.next();
 
-            for (Iterator iter = params.keySet().iterator(); iter.hasNext();) {
+				String value = String.valueOf(params.get(name));
 
-    			String name = (String) iter.next();
+				nvps.add(new BasicNameValuePair(name, value));
+			}
 
-    			String value = String.valueOf(params.get(name));
+			request.setEntity(new UrlEncodedFormEntity(nvps, HTTP.UTF_8));
 
-    			nvps.add(new BasicNameValuePair(name, value));
-    		}
+			HttpResponse response = client.execute(request);
+			System.out.println(response);
 
-            request.setEntity(new UrlEncodedFormEntity(nvps,HTTP.UTF_8));
+			int code = response.getStatusLine().getStatusCode();
 
-            
+			if (code == 200) { // 请求成功
 
-            HttpResponse response = client.execute(request);  
-            System.out.println(response);
+				in = new BufferedReader(new InputStreamReader(response
+						.getEntity()
 
-            int code = response.getStatusLine().getStatusCode();
+						.getContent(), "utf-8"));
 
-            if(code == 200){	//请求成功
+				StringBuffer sb = new StringBuffer("");
 
-            	in = new BufferedReader(new InputStreamReader(response.getEntity()  
+				String line = "";
 
-                        .getContent(),"utf-8"));
+				String NL = System.getProperty("line.separator");
 
-                StringBuffer sb = new StringBuffer("");  
+				while ((line = in.readLine()) != null) {
 
-                String line = "";  
+					sb.append(line + NL);
 
-                String NL = System.getProperty("line.separator");  
+				}
 
-                while ((line = in.readLine()) != null) {  
+				in.close();
 
-                    sb.append(line + NL);  
+				return sb.toString();
 
-                }
+			}
 
-                
+			else { //
 
-                in.close();  
+				System.out.println("状态码：" + code);
 
-                
+				return null;
 
-                return sb.toString();
+			}
 
-            }
+		}
 
-            else{	//
+		catch (Exception e) {
 
-            	System.out.println("状态码：" + code);
+			e.printStackTrace();
 
-            	return null;
+			return null;
 
-            }
-
-        }
-
-        catch(Exception e){
-
-        	e.printStackTrace();
-        	
-        	
-
-        	return null;
-
-        }
+		}
 
 	}
-
 
 	public static String doPost(String url, String params) throws Exception {
 
+		System.out.println("url:" + url);
+		System.out.println("params:" + params);
 		CloseableHttpClient httpclient = HttpClients.createDefault();
-		HttpPost httpPost = new HttpPost(url);// 创建httpPost   
-    	//httpPost.setHeader("Accept", "application/json"); 
-    	httpPost.setHeader("Content-type", "application/json; charset=utf-8");
-    	httpPost.setHeader("Authorization", "Basic "+new String(Base64.encode("e9c8d95d917dccde804b392d:3eb731238e39ad65311f30f0".getBytes()))); 
+		HttpPost httpPost = new HttpPost(url);// 创建httpPost
+		// httpPost.setHeader("Accept", "application/json");
+		httpPost.setHeader("Content-type", "application/json; charset=utf-8");
+		httpPost.setHeader(
+				"Authorization",
+				"Basic "
+						+ new String(
+								Base64.encode("e9c8d95d917dccde804b392d:3eb731238e39ad65311f30f0"
+										.getBytes())));
 
-    	Header[] header = httpPost.getAllHeaders();
-    	for(Header h : header){
-    		System.out.println(h.getValue());
-    	}
-    	
-    	//System.out.println(httpPost.getAllHeaders());
-    	String charSet = "UTF-8";
+		Header[] header = httpPost.getAllHeaders();
+		for (Header h : header) {
+			System.out.println(h.getValue());
+		}
 
-    	StringEntity entity = new StringEntity(params, charSet);
+		// System.out.println(httpPost.getAllHeaders());
+		String charSet = "UTF-8";
 
-    	httpPost.setEntity(entity);        
+		StringEntity entity = new StringEntity(params, charSet);
 
-        CloseableHttpResponse response = null;
-        try {
-        	response = httpclient.execute(httpPost);
-            StatusLine status = response.getStatusLine();
-            System.out.println(response);
-            int state = status.getStatusCode();
-            System.out.println(state+"");
-            if (state == HttpStatus.SC_OK) {
-            	HttpEntity responseEntity = response.getEntity();
-            	String jsonString = EntityUtils.toString(responseEntity);
-            	return jsonString;
-            }
-        }catch(Exception e){
-        	e.printStackTrace();
-        }
-        finally {
-            if (response != null) {
+		httpPost.setEntity(entity);
 
-                try {
+		CloseableHttpResponse response = null;
+		try {
+			response = httpclient.execute(httpPost);
+			StatusLine status = response.getStatusLine();
+			System.out.println(response);
+			int state = status.getStatusCode();
+			System.out.println(state + "");
+			if (state == HttpStatus.SC_OK) {
+				HttpEntity responseEntity = response.getEntity();
+				String jsonString = EntityUtils.toString(responseEntity);
+				return jsonString;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			if (response != null) {
 
-                    response.close();
+				try {
 
-                } catch (IOException e) {
+					response.close();
 
-                    e.printStackTrace();
+				} catch (IOException e) {
 
-                }
+					e.printStackTrace();
 
-            }
+				}
 
-            try {
+			}
+
+			try {
 
 				httpclient.close();
 
@@ -240,11 +216,10 @@ public class HttpUtils {
 
 			}
 
-        }
+		}
 
-        return "";
+		return "";
 
 	}
 
 }
-
