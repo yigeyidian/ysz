@@ -305,11 +305,12 @@ public class RoomDao {
 			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 
 			players = Tools.removeId(players, playerid + "");
+			System.out.println(players);
 			String sql = "UPDATE room SET players=? WHERE roomid=?";
 			stmt = conn.prepareStatement(sql);
 			stmt.setString(1, players);
 			stmt.setInt(2, roomid);
-			return stmt.executeUpdate(sql) > 0;
+			return stmt.executeUpdate() > 0;
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
