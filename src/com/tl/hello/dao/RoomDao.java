@@ -270,7 +270,7 @@ public class RoomDao {
 						+ playerid
 						+ ",200,'',0,0,0,0,CURRENT_TIME())";
 				flag = stmt.executeUpdate(sql) > 0;
-				sql = "UPDATE player p SET head = (SELECT head FROM user WHERE id =p.playerid) WHERE playerid="
+				sql = "UPDATE player p SET head = (SELECT head FROM user WHERE id =p.playerid),nickname = (SELECT nickname FROM user WHERE id =p.playerid) WHERE playerid="
 						+ playerid;
 				System.out.println(sql);
 				flag = stmt.executeUpdate(sql) > 0;
@@ -397,10 +397,11 @@ public class RoomDao {
 
 			for (int i = 0; i < playersid.length; i++) {
 				String sql = "SELECT ready FROM player WHERE playerid="
-						+ playersid[i];
+						+ playersid[i]+" AND roomid="+roomid;
 				ResultSet set = stmt.executeQuery(sql);
 				if (set.next()) {
 					flag = set.getInt(1) > 0;
+					System.out.println(set.getInt(1)+"--"+sql);
 				}
 				set.close();
 				if (!flag) {
@@ -1211,6 +1212,13 @@ public class RoomDao {
 				jsonObject.put("award", rs.getInt("award"));
 				jsonObject.put("awardtype", rs.getInt("awardtype"));
 				jsonObject.put("eattype", rs.getInt("eattype"));
+				jsonObject.put("curbout", rs.getInt("curbout"));
+				jsonObject.put("allstake", rs.getInt("allstake"));
+				jsonObject.put("curstake", rs.getInt("curstake"));
+				jsonObject.put("minstake", rs.getInt("minstake"));
+				jsonObject.put("curplayer", rs.getInt("curplayer"));
+				jsonObject.put("remainplayers", rs.getInt("remainplayers"));
+				jsonObject.put("maxplayer", rs.getInt("maxplayer"));
 			}
 			rs.close();
 			return jsonObject.toJSONString();
@@ -1293,6 +1301,7 @@ public class RoomDao {
 			while (rs.next()) {
 				JSONObject jsonObject = new JSONObject();
 				jsonObject.put("id", Integer.valueOf(rs.getInt("id")));
+				jsonObject.put("nickname", Integer.valueOf(rs.getInt("nickname")));
 				jsonObject.put("roomid", Integer.valueOf(rs.getInt("roomid")));
 				jsonObject.put("playerid",
 						Integer.valueOf(rs.getInt("playerid")));
